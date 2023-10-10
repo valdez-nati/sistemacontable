@@ -6,6 +6,7 @@
 
 
 {% block body %}
+<!--
 <main class="form-signin w-100 m-auto">
     <form action='/login' method='POST'>
         <img class="mb-4" src="{{url_for('static', filename='img/flask.png')}}" alt="" width="200" height="100">
@@ -36,5 +37,55 @@
         <button class="btn btn-primary w-100 py-2" type="submit">Sign in</button>
        
     </form>
-</main>
+</main>-->
+<div class="main">
+    <div class="container">
+      <center>
+        <div class="middle">
+          <div id="login">
+            <form action="/login" method="POST">
+              {% with messages = get_flashed_messages() %}
+              {% if messages %}
+              <br />
+              {% for message in messages %}
+              <div class="alert alert-primary" role="alert">
+                <strong>{{ message }}</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+              {% endfor %}
+              {% endif %}
+              {% endwith %}
+  
+              <fieldset class="clearfix">
+  
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-floating">
+                  <span class="fa fa-user"></span>
+                  <input type="text" class="form-control" id="username" name="username" placeholder="Username" required>
+                  <!--<label for="username">Username</label>-->
+                </div>
+                <div class="form-floating">
+                  <span class="fa fa-lock"></span>
+                  <input type="password" class="form-control" name="contraseña" placeholder="Password" required>
+                  <!--<label for="contraseña">Password</label>-->
+                </div>
+                <div>
+                  <!--<span style="width: 48%; text-align: left; display: inline-block;"><a class="small-text"
+                      href="#">Forgot password?</a></span>-->
+                  <span style="width: 50%; text-align: right; display: inline-block;"><button
+                      class="btn btn-primary w-100 py-2" type="submit">Sign In</button></span>
+                </div>
+              </fieldset>
+              <div class="clearfix"></div>
+            </form>
+          </div> <!-- end login -->
+          <div class="logo">
+            <img class="mb-4" src="{{ url_for('static', filename='img/flask.png') }}" >
+            <div class="clearfix"></div>
+          </div>
+        </div>
+      </center>
+    </div>
+  </div>
+  
 {% endblock  %}

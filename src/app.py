@@ -109,11 +109,9 @@ def editarcliente():
 
 @app.route("/borrarcliente/<string:ruc>", methods=['GET'])
 def borrarcliente(ruc):
-    flash("Record Has Been Deleted Successfully")
+    flash("Cliente eliminado")
     mycursor = db.connection.cursor() #para asegurar la coneccion y el cierre se usa .connection
-    sql = "DELETE clientes WHERE ruc= %s"
-    val = (ruc)
-    mycursor.execute(sql, val,)
+    mycursor.execute( "DELETE FROM clientes WHERE ruc= %s",(ruc,))
     db.connection.commit()
     #mycursor.close()
     return redirect(url_for('home'))

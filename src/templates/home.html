@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block customCSS %}
+<link rel="stylesheet" href="{{url_for('static', filename='css/home.css')}}">
+
+{% endblock  %}
+
+{% block title %}HOME{% endblock  %}
+
+{% block body %}
+<a class="btn btn-secondary bg-dark text-white" href={{url_for('logout')}} style="float: right;">Cerrar Sesion</a>
+<header class="navbar navbar-expand-md navbar-dark bg-dark sticky-top">
+  <a class="navbar-brand fs-6 text-white" href="#">Estudio Contable YANA</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSearch" aria-controls="navbarSearch" aria-expanded="false" aria-label="Toggle search">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <button class="navbar-toggler" type="button" data-toggle="offcanvas" data-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse" id="navbarSearch">
+    <form class="form-inline ml-auto">
+      <input class="form-control border-0 rounded-0" type="text" placeholder="Search" aria-label="Search">
+    </form>
+  </div>
+</header>
+
+<div class="container-fluid">
+  
+          <div class="row">
+              <div class="col-sm-2"></div>
+  
+              <!-- content goes here -->
+              <div class="col-sm-8">
+  <h2 >CLIENTES <button class="btn btn-primary float-right" data-toggle="modal" data-target="#myModal">Nuevo</button></h2>
+  
+  {%with messages = get_flashed_messages()%}
+  {%if messages%}
+  {% for message in messages %}
+  <div class="alert alert-success alert-dismissable" role="alert">
+      <button type="button" class="close" data-dismiss="alert" aria-label="close">
+          <span aria-hidden="true">&times;</span>
+      </button>
+      {{message}}
+  </div>
+  {%endfor%}
+  {%endif%}
+  {%endwith%}
+  
+  
+  
+      <!-- Ventanita de nuevo cliente -->
+      <div id="myModal" class="modal fade" role="dialog">
+          <div class="modal-dialog">
+              <div class="modal-content">
+     
+                  <div class="modal-header">
+                      <h5 class="modal-title text-primary" style="align-content: center;">Nuevo Cliente</h5>    
+                      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                      </button>
+                    </div>
+                    
+  
+                  <div class="modal-body">
+                      
+                      <form action="{{ url_for('nuevocliente')}}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{csrf_token()}}"> <!--para que no tire error con el token-->
+
+                          <div class="form-group">
+                            <label>Nombres</label>
+                            <input type="text" name="nombre" class="form-control" id="nombre" placeholder="Nombre">
+                          </div>
+  
+                          <div class="form-group">
+                              <label>Apellidos</label>
+                              <input type="text" name="apellido" class="form-control" id="apellido" placeholder="Apellidos">
+                          </div>
+  
+                          <div class="form-group">
+                              <label>Razon Social</label>
+                              <input name="razon" type="text" class="form-control" id="razon" placeholder="Enter Phone Number">
+                          </div>
+ 
+                          <div class="form-group">
+                            <label>RUC</label>
+                            <input name="ruc" type="text" class="form-control" id="ruc" placeholder="RUC">
+                          </div>    
+
+                          <button type="submit" class="btn btn-primary mb-2">Guardar</button>
+                       
+                        </form>
+  
+  
+                  </div>
+              </div>
+          </div>
+  
+      </div>
+  
+  
+      <!-- tabla que muestra los clientes -->
+  
+  
+  
+  
+  <table class="table table-hover">
+      <thead>
+          <tr>
+              <th scope="col">Nombres</th>
+              <th scope="col">Apellidos</th>
+              <th scope="col">Razon Social</th>
+              <th scope="col">RUC</th>
+              <th scope="col"></th>
+          </tr>
+      </thead>
+      <tbody>
+          {% for row in data %}
+          <tr>
+          <td>{{row.0}}</td>
+          <td>{{row.1}}</td>
+          <td>{{row.2}}</td>
+          <td>{{row.3}}</td>
+          <td>
+              <a href="/editarcliente/{{row.3}}" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#modaledit{{row.3}}">Editar</a>
+              <a href="/borrarcliente/{{ row.3 }}" onclick="return confirm('Are Sure Want To Deleted ?')" class="btn btn-danger btn-sm">Eliminar</a>
+  
+          </td>
+      </tr>
+  
+  
+          <!-- Enter New Student Modal -->
+          <div id="modaledit{{row.0}}" class="modal fade" role="dialog">
+              <div class="modal-dialog">
+                  <div class="modal-content">
+         
+                      <div class="modal-header">
+                          <h5 class="modal-title text-primary" style="align-content: center;">Editar</h5>    
+                          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                          </button>
+                        </div>
+                        
+      
+                      <div class="modal-body">
+                          
+                          <form action="{{ url_for('editarcliente')}}" method="POST">                    
+                            <input type="hidden" name="csrf_token" value="{{csrf_token()}}"> <!--para que no tire error con el token-->
+                            <input type="hidden" name="id" value="{{row.0}}">
+                              <div class="form-group">
+                                <label>Nombres</label>
+                                <input value="{{row.0}}" type="text" name="nombre" class="form-control" id="nombre" placeholder="Enter Full Name">
+                              </div>
+      
+                              <div class="form-group">
+                                  <label>Apellidos</label>
+                                  <input value="{{row.1}}" type="text" name="apellido" class="form-control" id="apellido" placeholder="Enter Email">
+                              </div>
+      
+                              <div class="form-group">
+                                  <label>Razon Social</label>
+                                  <input value="{{row.2}}" name="razon" type="text" class="form-control" id="razon" placeholder="Enter Phone Number">
+                              </div>
+
+                              <div class="form-group">
+                                <label>RUC</label>
+                                <input value="{{row.3}}" name="ruc" type="text" class="form-control" id="ruc" placeholder="Enter Phone Number">
+                              </div>
+      
+                                <button type="submit" class="btn btn-success mb-2">Actualizar</button>
+                           
+                            </form>
+      
+      
+                      </div>
+                  </div>
+              </div>
+      
+          </div>
+      
+      
+          <!-- End of Edit Student Modal -->
+  
+  
+  
+  
+          {% endfor %}
+      </tbody>
+  
+  </table>
+              </div>
+              <!-- Content ends here-->
+  
+  
+              <div class="col-sm-2"></div>
+  
+          </div>
+      </div>
+  
+
+
+
+{% endblock  %}

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block customCSS %}
+<link rel="stylesheet" href="{{url_for('static', filename='css/home.css')}}">
+{% endblock  %}
+
+{% block title %}VISTA{% endblock  %}
+
+
+{% block body %}
+
+
+<header class="navbar navbar-expand-md navbar-dark bg-dark sticky-top">
+  <a class="btn btn-secondary bg-dark text-white" href={{url_for('logout')}} style="float: right;">Cerrar Sesion</a>
+  <a class="navbar-brand fs-6 text-white" href="#">Estudio Contable YANA</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSearch" aria-controls="navbarSearch" aria-expanded="false" aria-label="Toggle search">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <button class="navbar-toggler" type="button" data-toggle="offcanvas" data-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+</header>
+
+<h1>BALANCE</h1>
+<input type="hidden" name="csrf_token" value="{{csrf_token()}}">
+<a href="/home"  class="btn btn-primary float-right">HOME</a>
+
+<a href="/balance"><button>GENERAL</button></a>
+<button>PROVISORIO</button>
+ 
+<table>
+  <tr>
+      <th>Nombre</th>
+      <th>Apellido</th>
+      <th>Activo</th>
+      <th>Saldo</th>
+  </tr>
+  {% for row in data %}
+  <tr>
+      <td>{{ row.5 }}</td>
+      <td>{{ row.6 }}</td>
+      <td>{{ row.7 }}</td>
+      <td>{{ row.8 }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+</table>
+{% endblock  %}

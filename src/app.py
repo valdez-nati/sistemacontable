@@ -3,8 +3,10 @@ from flask_mysqldb import MySQL
 from werkzeug.security import check_password_hash
 from config import config
 from crud.cliente import insertar, actualizar, borrar
+from crud.general import activos
 from flask_login import LoginManager, current_user, login_user, logout_user, login_required
 from flask_wtf.csrf import CSRFProtect
+
 
 
 #Modelos
@@ -13,6 +15,7 @@ from models.ModelUser import ModelUser
 from models.entities.User import User
 
 app = Flask(__name__)
+app = Flask(__name__, static_folder='static', template_folder='templates')
 
 csrf= CSRFProtect(app)
 
@@ -66,15 +69,15 @@ def logout():
 @app.route('/home')
 @login_required
 def home():
+    if not current_user.is_authenticated:
+        return redirect(url_for('login'))
 
     mycursor = db.connection.cursor()
-    sql = "SELECT nombre, apellido,razonsocial, ruc FROM clientes"
+    sql = "SELECT idcliente,nombre, apellido,razonsocial, ruc FROM clientes"
     mycursor.execute(sql)
     ver = mycursor.fetchall()
     mycursor.close()
-    if not current_user.is_authenticated:
-        return redirect(url_for('login'))
-        
+
 
     return render_template('home.html', data=ver )
 
@@ -100,12 +103,13 @@ def nuevocliente():
         return redirect(url_for('home'))   
 
 
-@app.route("/editarcliente",methods= ['POST', 'GET'])# tiene que lamarse igual la funcion y la url/
+@app.route("/editarcliente", methods= ['POST', 'GET'])# tiene que lamarse igual la funcion y la url/
 def editarcliente():
     if request.method == 'POST':
         actualizar()
         flash("Actualizado con exito...")
         return redirect(url_for('home'))
+
 
 @app.route("/borrarcliente/<string:ruc>", methods=['GET'])
 def borrarcliente(ruc):
@@ -116,6 +120,12 @@ def borrarcliente(ruc):
     #mycursor.close()
     return redirect(url_for('home'))
     
+    
+    
+@app.route('/balance')
+@login_required
+def balance():
+    return activos()
 
     
 

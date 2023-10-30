@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block customCSS %}
-<link rel="stylesheet" href="{{url_for('static', filename='css/home.css')}}">
+<link rel="stylesheet" href="{{url_for('static', filename='css/balance.css')}}">
 {% endblock  %}
 
 {% block title %}VISTA{% endblock  %}
@@ -23,26 +23,31 @@
 <h1>BALANCE</h1>
 <input type="hidden" name="csrf_token" value="{{csrf_token()}}">
 <a href="/home"  class="btn btn-primary float-right">HOME</a>
-
-<a href="/balance"><button>GENERAL</button></a>
-<button>PROVISORIO</button>
- 
 <table>
   <tr>
-      <th>Nombre</th>
-      <th>Apellido</th>
-      <th>Activo</th>
-      <th>Saldo</th>
+      <td class="numero">1</td>
+      <td  colspan="3"><strong>ACTIVOS</strong></td>
+      <td></td>
+      <td></td>
   </tr>
-  {% for row in data %}
   <tr>
-      <td>{{ row.5 }}</td>
-      <td>{{ row.6 }}</td>
-      <td>{{ row.7 }}</td>
-      <td>{{ row.8 }}</td>
+    <td class="numero">10</td>
+    <td  colspan="3"><strong>ACTIVO CORRIENTE</strong></td><!--strong es para poner e negrita-->
+    <td></td>
+    <td></td>
   </tr>
-  {% endfor %}
-</table>
 
+  <tr>
+      <td class="numero">10101</td>
+      <td>DISPONIBILIDADES</td>
+  </tr>
+  <tr>
+    <td class="numero">1010101</td>
+    <td>Caja</td>
+  </tr>
+  <tr>
+    <td class="numero">1010102</td>
+    <td>Recaudaciones a Depositar</td>
+  </tr>
 </table>
 {% endblock  %}

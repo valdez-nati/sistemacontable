@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block customCSS %}
+<link rel="stylesheet" href="{{url_for('static', filename='css/home.css')}}">
+{% endblock  %}
+
+
+
+
+{% block body %}
+
+<table class="table table-hover">
+    <thead>
+        <tr>
+            <th scope="col">Caja</th>
+            <th scope="col">Apellidos</th>
+            <th scope="col">Razon Social</th>
+            <th scope="col">RUC</th>
+            <th scope="col"></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in data %}
+        <tr>
+        <td>{{row.1}}</td>
+        <td>{{row.2}}</td>
+        <td>{{row.3}}</td>
+        <td>{{row.4}}</td>
+        <td>
+            <a href="/editarcliente/{{row.4}}" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#modaledit{{row.0}}">Editar</a>
+            <a href="/borrarcliente/{{ row.4 }}" onclick="return confirm('¿Seguro que desea eliminar?')" class="btn btn-danger btn-sm">Eliminar</a>
+            <a href="/balance/"  class="btn btn-danger btn-sm">Provisorio</a>
+            <a href="/balance/"  class="btn btn-danger btn-sm">General</a>
+
+        </td>
+    </tr>
+
+
+        <!-- Enter New Student Modal -->
+        <div id="modaledit{{row.0}}" class="modal fade" role="dialog">
+            <div class="modal-dialog">
+                <div class="modal-content">
+       
+                    <div class="modal-header">
+                        <h5 class="modal-title text-primary" style="align-content: center;">Editar</h5>    
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                          <span aria-hidden="true">&times;</span>
+                        </button>
+                      </div>
+                      
+    
+                    <div class="modal-body">
+                        
+                        <form action="{{ url_for('editarcliente')}}" method="POST">
+                            <input type="hidden" name="idcliente" value="{{row.0}}">
+                            <input type="hidden" name="csrf_token" value="{{csrf_token()}}"> <!--para que no tire error con el token-->
+
+                            <div class="form-group">
+                              <label>Nombres</label>
+                              <input value="{{row.1}}" type="text" name="nombre" class="form-control" id="exampleFormControlInput1" placeholder="">
+                            </div>
+    
+                            <div class="form-group">
+                                <label>Apellidos</label>
+                                <input value="{{row.2}}" type="text" name="apellido" class="form-control" id="exampleFormControlInput1" placeholder="">
+                            </div>
+                            
+                            <div class="form-group">
+                              <label>Razon Social</label>
+                              <input value="{{row.3}}" type="text" name="razon" class="form-control" id="exampleFormControlInput1" placeholder="">
+                            </div>
+
+                            <div class="form-group">
+                                <label>RUC</label>
+                                <input value="{{row.4}}" name="ruc" type="text" class="form-control" id="exampleFormControlInput1" placeholder="">
+                              </div>
+    
+                              <button type="submit" class="btn btn-success mb-2">Actualizar</button>
+                         
+                          </form>
+    
+    
+                    </div>
+                </div>
+            </div>
+    
+        </div>
+    
+    
+        <!-- End of Edit Student Modal -->
+
+
+
+
+        {% endfor %}
+    </tbody>
+
+</table>
+
+{% endblock  %}

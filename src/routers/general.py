@@ -18,7 +18,7 @@ def activos(ruc):
         FROM clientes AS c
         JOIN activos AS a ON c.idcliente = a.cliente_idcliente
         JOIN acorriente AS ac ON a.acorriente_idacorriente = ac.idacorriente
-        JOIN otrosactivos AS o ON ac.idacorr-iente = o.acorriente_idacorriente
+        JOIN otrosactivos AS o ON ac.idacorriente = o.acorriente_idacorriente
         WHERE c.ruc = %s",(ruc,)
     """
     mycursor.execute(sql)

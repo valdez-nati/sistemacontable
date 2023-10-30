@@ -1,31 +1,30 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash,  Blueprint
 from flask_mysqldb import MySQL
 from werkzeug.security import check_password_hash
 from config import config
-from crud.cliente import insertar, actualizar, borrar
-from crud.general import activos
+#from crud.cliente import insertar, actualizar, borrar
 from flask_login import LoginManager, current_user, login_user, logout_user, login_required
 from flask_wtf.csrf import CSRFProtect
 
 
-
 #Modelos
 from models.ModelUser import ModelUser
-
 from models.entities.User import User
 
-app = Flask(__name__)
+from routers.cliente import c
+
+
+
 app = Flask(__name__, static_folder='static', template_folder='templates')
+app.register_blueprint(c)
+
 
 csrf= CSRFProtect(app)
 
 db= MySQL(app)
 login_manager_app= LoginManager(app)
 
-# @login_manager_app.unauthorized_handler
-# def unauthorized_callback():
-#     flash('Debe iniciar sesión para continuar.')
-#     return redirect(url_for('login'))
+
 @login_manager_app.user_loader
 def load_user(id):
     return ModelUser.get_by_id(db,id)
@@ -73,13 +72,13 @@ def home():
         return redirect(url_for('login'))
 
     mycursor = db.connection.cursor()
-    sql = "SELECT idcliente,nombre, apellido,razonsocial, ruc FROM clientes"
+    sql = "SELECT idcliente,nombres, apellidos,razonsocial, ruc FROM clientes"
     mycursor.execute(sql)
-    ver = mycursor.fetchall()
+    data = mycursor.fetchall()
     mycursor.close()
 
 
-    return render_template('home.html', data=ver )
+    return render_template('home.html', data=data )
 
 
 # @app.route('/protegida')
@@ -94,41 +93,17 @@ def status_401(error):
 def status_404(error):
     return "<h1>Pagina no encontrada</h1>", 404
     
-    
-@app.route('/nuevocliente', methods=['GET', 'POST'])
-def nuevocliente():   
-    if request.method == 'POST': #para que inserte en la base de datos cuando trae informacion
-        insertar()
-        flash("Guardado con exito...")
-        return redirect(url_for('home'))   
 
 
-@app.route("/editarcliente", methods= ['POST', 'GET'])# tiene que lamarse igual la funcion y la url/
-def editarcliente():
-    if request.method == 'POST':
-        actualizar()
-        flash("Actualizado con exito...")
-        return redirect(url_for('home'))
 
 
-@app.route("/borrarcliente/<string:ruc>", methods=['GET'])
-def borrarcliente(ruc):
-    flash("Cliente eliminado")
-    mycursor = db.connection.cursor() #para asegurar la coneccion y el cierre se usa .connection
-    mycursor.execute( "DELETE FROM clientes WHERE ruc= %s",(ruc,))
-    db.connection.commit()
-    #mycursor.close()
-    return redirect(url_for('home'))
+
+
     
     
-    
-@app.route('/balance')
-@login_required
-def balance():
-    return activos()
+
 
     
-
 if __name__ == '__main__':
     app.config.from_object(config['development'])
     csrf.init_app(app)

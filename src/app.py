@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash,  Blueprint
+from flask import Flask, render_template, request, redirect, url_for, flash  
 from flask_mysqldb import MySQL
 from werkzeug.security import check_password_hash
 from config import config
@@ -6,18 +6,18 @@ from config import config
 from flask_login import LoginManager, current_user, login_user, logout_user, login_required
 from flask_wtf.csrf import CSRFProtect
 
-
 #Modelos
 from models.ModelUser import ModelUser
 from models.entities.User import User
 
-from routers.cliente import c
+
+from routers.cliente import clientes_bp
 
 
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
-app.register_blueprint(c)
 
+app.register_blueprint(clientes_bp)
 
 csrf= CSRFProtect(app)
 
@@ -72,7 +72,7 @@ def home():
         return redirect(url_for('login'))
 
     mycursor = db.connection.cursor()
-    sql = "SELECT idcliente,nombres, apellidos,razonsocial, ruc FROM clientes"
+    sql = "SELECT * FROM clientes"
     mycursor.execute(sql)
     data = mycursor.fetchall()
     mycursor.close()

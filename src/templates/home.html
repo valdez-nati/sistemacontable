@@ -62,7 +62,7 @@
 
                 <div class="modal-body">
                     
-                    <form action="{{ url_for('nuevocliente')}}" method="POST">
+                    <form action="{{ url_for('clientes.nuevocliente')}}" method="POST">
                       
                       <input type="hidden" name="csrf_token" value="{{csrf_token()}}"> <!--para que no tire error con el token-->
 
@@ -120,8 +120,8 @@
         <td>{{row.3}}</td>
         <td>{{row.4}}</td>
         <td>
-            <a href="/cliente.editarcliente/{{row.4}}" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#modaledit{{row.0}}">Editar</a>
-            <a href="/borrarcliente/{{ row.4 }}" onclick="return confirm('¿Seguro que desea eliminar?')" class="btn btn-danger btn-sm">Eliminar</a>
+            <a href="{{ url_for('clientes.editarcliente', row=row[4]) }}"  class="btn btn-warning btn-sm" data-toggle="modal" data-target="#modaledit{{row.0}}">Editar</a>
+            <a href="{{ url_for('clientes.borrarcliente', row=row[4]) }}"  onclick="return confirm('¿Seguro que desea eliminar?')" class="btn btn-danger btn-sm">Eliminar</a>
             <a href="/cargar/"  class="btn btn-danger btn-sm">Provisorio</a>
             <a href="/cargar/"  class="btn btn-danger btn-sm">General</a>
 

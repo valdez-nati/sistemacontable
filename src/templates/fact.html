@@ -20,34 +20,14 @@
   </button>
 </header>
 
-<h1>BALANCE</h1>
+<h1>Registro de Comprobantes de Ventas</h1>
 <input type="hidden" name="csrf_token" value="{{csrf_token()}}">
 <a href="/home"  class="btn btn-primary float-right">HOME</a>
-<table>
-  <tr>
-      <td class="numero">1</td>
-      <td  colspan="3"><strong>ACTIVOS</strong></td>
-      <td></td>
-      <td></td>
-  </tr>
-  <tr>
-    <td class="numero">10</td>
-    <td  colspan="3"><strong>ACTIVO CORRIENTE</strong></td><!--strong es para poner e negrita-->
-    <td></td>
-    <td></td>
-  </tr>
 
-  <tr>
-      <td class="numero">10101</td>
-      <td>DISPONIBILIDADES</td>
-  </tr>
-  <tr>
-    <td class="numero">1010101</td>
-    <td>Caja</td>
-  </tr>
-  <tr>
-    <td class="numero">1010102</td>
-    <td>Recaudaciones a Depositar</td>
-  </tr>
-</table>
+
+<select id="tipo" name="tipo">
+    <option value="factura">Factura</option>
+
+</select><br><br>
+
 {% endblock  %}

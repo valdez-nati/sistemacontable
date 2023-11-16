@@ -62,7 +62,7 @@
 
                 <div class="modal-body">
                     
-                    <form action="{{ url_for('clientes.nuevocliente')}}" method="POST">
+                    <form action="{{ url_for('nuevocliente')}}" method="POST">
                       
                       <input type="hidden" name="csrf_token" value="{{csrf_token()}}"> <!--para que no tire error con el token-->
 
@@ -80,6 +80,11 @@
                             <label>Razon Social</label>
                             <input name="razon" type="text" class="form-control" id="exampleFormControlInput1" placeholder="">
                           </div>
+                          <div class="form-group">
+                            <label>Correo Electronico</label>
+                            <input type="text" name="correo" class="form-control" id="exampleFormControlInput1" placeholder="">
+                        </div>
+
                         <div class="form-group">
                             <label>RUC</label>
                             <input type="text" name="ruc" class="form-control" id="exampleFormControlInput1" placeholder="">
@@ -108,6 +113,7 @@
             <th scope="col">Nombres</th>
             <th scope="col">Apellidos</th>
             <th scope="col">Razon Social</th>
+            <th scope="col">Correo Electronico</th>
             <th scope="col">RUC</th>
             <th scope="col"></th>
         </tr>
@@ -119,11 +125,12 @@
         <td>{{row.2}}</td>
         <td>{{row.3}}</td>
         <td>{{row.4}}</td>
+        <td>{{row.5}}</td>
         <td>
-            <a href="{{ url_for('clientes.editarcliente', row=row[4]) }}"  class="btn btn-warning btn-sm" data-toggle="modal" data-target="#modaledit{{row.0}}">Editar</a>
-            <a href="{{ url_for('clientes.borrarcliente', row=row[4]) }}"  onclick="return confirm('¿Seguro que desea eliminar?')" class="btn btn-danger btn-sm">Eliminar</a>
-            <a href="/cargar/"  class="btn btn-danger btn-sm">Provisorio</a>
-            <a href="/cargar/"  class="btn btn-danger btn-sm">General</a>
+            <a href="/editarcliente/{{ row.5 }}"  class="btn btn-warning btn-sm" data-toggle="modal" data-target="#modaledit{{row.0}}">Editar</a>
+            <a href="/borrarcliente/{{ row.5 }}"  onclick="return confirm('¿Seguro que desea eliminar?')" class="btn btn-danger btn-sm">Eliminar</a>
+            <a href="/cargar/"  class="btn btn-danger btn-sm">Cargar</a>
+          
 
         </td>
     </tr>
@@ -162,10 +169,14 @@
                               <label>Razon Social</label>
                               <input value="{{row.3}}" type="text" name="razon" class="form-control" id="exampleFormControlInput1" placeholder="">
                             </div>
+                            <div class="form-group">
+                              <label>Correo Electronico</label>
+                              <input value="{{row.4}}" type="text" name="correo" class="form-control" id="exampleFormControlInput1" placeholder="">
+                            </div>
 
                             <div class="form-group">
                                 <label>RUC</label>
-                                <input value="{{row.4}}" name="ruc" type="text" class="form-control" id="exampleFormControlInput1" placeholder="">
+                                <input value="{{row.5}}" name="ruc" type="text" class="form-control" id="exampleFormControlInput1" placeholder="">
                               </div>
     
                               <button type="submit" class="btn btn-success mb-2">Actualizar</button>

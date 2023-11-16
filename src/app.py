@@ -11,13 +11,12 @@ from models.ModelUser import ModelUser
 from models.entities.User import User
 
 
-from routers.cliente import clientes_bp
+from routers.cliente import actualizar, insertar
 
 
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
-app.register_blueprint(clientes_bp)
 
 csrf= CSRFProtect(app)
 
@@ -64,7 +63,15 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
         
-    
+
+
+def status_401(error):
+    return redirect(url_for('login')), 401
+
+def status_404(error):
+    return "<h1>Pagina no encontrada</h1>", 404
+
+# Pagina principal
 @app.route('/home')
 @login_required
 def home():
@@ -81,26 +88,44 @@ def home():
     return render_template('home.html', data=data )
 
 
-# @app.route('/protegida')
-# @login_required #para que solo le muestre a los usuarios logueados 
-# def protegida():
-#     return "<h1>Vista protegida</h1>"
-    
-
-def status_401(error):
-    return redirect(url_for('login')), 401
-
-def status_404(error):
-    return "<h1>Pagina no encontrada</h1>", 404
-    
-
-
-
-
-
-
     
     
+
+# Insertar borrar y actualizar clientes
+@app.route('/nuevocliente', methods=['GET', 'POST'])
+def nuevocliente():   
+    if request.method == 'POST': #para que inserte en la base de datos cuando trae informacion
+        insertar()
+        flash("Guardado con exito...")
+        return redirect(url_for('home'))   
+
+
+@app.route("/editarcliente",methods= ['POST', 'GET'])# tiene que lamarse igual la funcion y la url/
+def editarcliente():
+    if request.method == 'POST':
+        actualizar()
+        flash("Actualizado con exito...")
+        return redirect(url_for('home'))
+
+@app.route("/borrarcliente/<string:ruc>", methods=['GET'])
+def borrarcliente(ruc):
+    flash("Cliente eliminado")
+    mycursor = db.connection.cursor() #para asegurar la coneccion y el cierre se usa .connection
+    mycursor.execute( "DELETE FROM clientes WHERE ruc= %s",(ruc,))
+    db.connection.commit()
+    mycursor.close()
+    return redirect(url_for('home'))
+    
+# ---------Carga de factura---------------
+
+@app.route("/cargar/")
+def fact():
+    return render_template('cargar.html')
+
+    
+@app.route("/compra/")
+def compra():
+    return render_template('fact.html')
 
 
     

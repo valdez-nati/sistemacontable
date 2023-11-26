@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block customCSS %}
-<link rel="stylesheet" href="{{url_for('static', filename='css/balance.css')}}">
+<link rel="stylesheet" href="{{url_for('static', filename='css/fact.css')}}">
 {% endblock  %}
 
 {% block title %}VISTA{% endblock  %}
@@ -24,10 +24,84 @@
 <input type="hidden" name="csrf_token" value="{{csrf_token()}}">
 <a href="/home"  class="btn btn-primary float-right">HOME</a>
 
+<form action="/agregar_diario/" method="post">
+  <h4>Datos del comprobante</h4>
+  <div class="div-container">
+    
+    <div class="input-group">
+      <label for="tipoc" style="text-align: right;">Tipo de Comprobantes:</label>
+      <select id="tipoc" name="tipoc"  class="cuadro-pequeno">
+          <option value="factura">Factura</option>
+          <option value="autofactura">Autofactura</option>
+          <option value="transporte">Boleta de transporte publico de pasajeros</option>
+          <option value="bventa">Boleta de venta</option>
+          <option value="bresimple">Boleta resimple</option>
+          <option value="bloteria">Boletos de loterias, juegos de azar </option>
+          <option value="despacho">Despacho de importación</option>
+          <option value="entrada">Entrada a espectaculos públicos</option>
+          <option value="ncredito">Nota de credito</option>
+          <option value="ndebito">Nota de debito</option>
+          <option value="ticket">Ticket maquina registradora</option>
+      </select>
+      <label for="fecha">Fecha:</label>
+      <input type="date" name="fecha" id="fecha"class="form-control cuadro-pequeno">
+    </div>
 
-<select id="tipo" name="tipo">
-    <option value="factura">Factura</option>
+  
+    <div class="input-group">
+      <label for="timbrado">Timbrado:</label>
+      <input type="number" name="timbrado" id="timbrado" class="form-control cuadro-pequeno">
+      <label for="ncomprobante">Numero de comprobante:</label>
+      <input type="number" name="ncomprobante" id="ncomprobante"class="form-control cuadro-pequeno">
+    </div>
+    <h4>Información de la Operación</h4>
+    <div class="input-group">
+      <div>
+        <label for="extranjera">Extranjera:</label><br>
+        <label class="switch">
+        <input type="checkbox">
+        <span class="slider round"></span>
+        </label>
+      </div>
+      <div>
+        <label for="operacion">Condición de la operación:</label><br>
+        <label for="contado">Contado</label>
+        <label class="switch">
+            <input type="checkbox" onclick="toggleSwitch(this)">
+            <span class="slider round"></span>
+        </label>
+    
+        <label for="credito">Credito</label>
+        <label class="switch">
+            <input type="checkbox" onclick="toggleSwitch(this)">
+            <span class="slider round"></span>
+        </label>
+    </div>
+    <h4>Información del Proveedor/Vendedor</h4>
+    <div class="input-group">
+      <label for="tipoid" style="text-align: right;">Tipo de Identificación:</label>
+      <select id="tipoid" name="tipoid"  class="cuadro-pequeno">
+        <option value="ruc">RUC</option>
+      </select>
+      <label for="numeroid">Numero de Identificación:</label>
+      <input type="number" name="numeroid" id="numeroid" class="form-control cuadro-pequeno">
+    </div>
+  </div>
+  
+    
+  
 
-</select><br><br>
+    
+</form>
+<script>
+  function toggleSwitch(clickedSwitch) {
+    const allSwitches = document.querySelectorAll('.switch input');
 
+    allSwitches.forEach(function (switchInput) {
+        if (switchInput !== clickedSwitch) {
+            switchInput.checked = false;
+        }
+    });
+  }
+</script>
 {% endblock  %}

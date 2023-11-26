@@ -35,6 +35,7 @@ def index():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    #consulta = db.query("INSERT INTO operaciones tipo=% ", "login")
     if request.method== 'POST':
         #print(request.form['username'])
         #print(request.form['password'])
@@ -43,6 +44,7 @@ def login():
         if logeado != None:
             if logeado.contraseña:
                 login_user(logeado)
+                #consulta = ("UPDATE operaciones set res= %, datosIngresados=% ", "acceso exitoso", user)
                 return redirect(url_for('home'))
             else:
                 flash("Contraseña invalida...")

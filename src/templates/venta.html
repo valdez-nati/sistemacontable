@@ -3,7 +3,7 @@
 <link rel="stylesheet" href="{{url_for('static', filename='css/fact.css')}}">
 {% endblock  %}
 
-{% block title %}VISTA{% endblock  %}
+{% block title %}VENTA{% endblock  %}
 
 
 {% block body %}
@@ -14,20 +14,16 @@
   <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSearch" aria-controls="navbarSearch" aria-expanded="false" aria-label="Toggle search">
     <span class="navbar-toggler-icon"></span>
   </button>
-
-  <!-- Botón "Cerrar Sesión" alineado a la derecha -->
   <div class="ml-auto">
     <a class="btn btn-secondary bg-dark text-white" href="{{url_for('logout')}}">Cerrar Sesión</a>
   </div>
-
-  <!-- Botón para el menú lateral (si es necesario) -->
   <button class="navbar-toggler" type="button" data-toggle="offcanvas" data-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
     <span class="navbar-toggler-icon"></span>
   </button>
 </header>
 
 
-<h1>Registro de Comprobantes de Compras</h1>
+<h1>Registro de Comprobantes de Ventas</h1>
 <input type="hidden" name="csrf_token" value="{{csrf_token()}}">
 <a href="/cargar/"  class="btn btn-primary float-left">Volver</a>
 
@@ -39,12 +35,9 @@
       <label for="tipoc" style="text-align: right;">Tipo de Comprobantes:</label>
       <select id="tipoc" name="tipoc"  class="cuadro-pequeno">
           <option value="factura">Factura</option>
-          <option value="autofactura">Autofactura</option>
           <option value="transporte">Boleta de transporte publico de pasajeros</option>
           <option value="bventa">Boleta de venta</option>
-          <option value="bresimple">Boleta resimple</option>
           <option value="bloteria">Boletos de loterias, juegos de azar </option>
-          <option value="despacho">Despacho de importación</option>
           <option value="entrada">Entrada a espectaculos públicos</option>
           <option value="ncredito">Nota de credito</option>
           <option value="ndebito">Nota de debito</option>
@@ -92,7 +85,14 @@
       <label for="tipoid" style="text-align: right;">Tipo de Identificación:</label>
       <select id="tipoid" name="tipoid"  class="cuadro-pequeno">
         <option value="ruc">RUC</option>
-      </select>
+        <option value="cin">Cedula de Identidad</option>
+        <option value="pasaporte">Pasaporte</option>
+        <option value="cie">Cedula Extranjera</option>
+        <option value="sin">Sin Nombre</option>
+        <option value="diplomatico">Diplomatico</option>
+        <option value="idt">Identificación Tributaria</option>
+        <option value="cliente">Cliente del Exterior</option>
+    </select>
       <label for="numeroid">Numero de Identificación:</label>
       <input type="number" name="numeroid" id="numeroid" class="form-control cuadro-pequeno">
     </div>
@@ -149,16 +149,7 @@
               <span class="slider round"></span>
           </label>
           </td>
-        </tr>
-        <tr>
-          <th>No Imputar</th>
-          <td>
-            <label class="switch">
-              <input type="checkbox" >
-              <span class="slider round"></span>
-          </label>
-          </td>
-        </tr>
+        </tr>        
       </table>
     </div>
     <div class="input-group">

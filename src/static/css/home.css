@@ -2,7 +2,7 @@ body {
   font-family: Arial, sans-serif;
 }
 .container {
-  max-width: 400px;
+  max-width: 900px;
   margin: 0 auto;
   padding: 20px;
   border: 1px solid #ccc;
@@ -69,4 +69,11 @@ td {
 /* Estilo para filas impares */
 tr:nth-child(odd) {
   background-color: #f2f2f2; /* Fondo gris claro para filas impares */
+}
+.button-row {
+  display: flex;
+  flex-direction: row;
+  gap: 5px; /* Ajusta este valor para cambiar el espacio entre los botones */
+  margin-bottom: 10px; /* Ajusta este valor para cambiar el espacio entre las filas */
+
 }

@@ -1,31 +1,27 @@
 /* Form styling */
 form {
-  max-width: 600px;
+  max-width: 900px;
   margin: 0 auto;
   padding: 20px;
   background-color: #f8f9fa;
   border: 1px solid #ced4da;
   border-radius: 5px;
 }
-
 /* Label alignment */
 .linea-labels label {
   margin-right: 10px;
 }
-
 /* Input and select styling */
 .input-group {
   display: flex;
   justify-content: space-between;
   margin-bottom: 10px;
 }
-
 .input-group input,
 .input-group select {
   flex: 1;
   margin-right: 10px;
 }
-
 /* Switch styling */
 .switch {
   display: flex;
@@ -35,7 +31,6 @@ form {
 .switch input {
   margin-right: 5px;
 }
-
 .slider {
   position: relative;
   cursor: pointer;
@@ -46,7 +41,6 @@ form {
   -webkit-transition: .4s;
   transition: .4s;
 }
-
 .slider:before {
   content: "";
   height: 26px;
@@ -56,7 +50,6 @@ form {
   -webkit-transition: .4s;
   transition: .4s;
 }
-
 .slider.round:before {
   border-radius: 50%;
 }
@@ -64,7 +57,6 @@ form {
 .slider.checked {
   background-color: #2196F3;
 }
-
 .slider.checked:before {
   -webkit-transform: translateX(26px);
   -ms-transform: translateX(26px);
@@ -75,21 +67,19 @@ form {
 .cuadro-pequeno {
   width: 150px; 
   border: 1px solid #000; 
-  height: 25px; 
+  height: 30px; 
 }
-
 /* Ajustar el tamaño del campo de fecha */
 #linea-labels input[type="date"] {
   width: 150px;
   border: 1px solid #000; /* Borde negro */
-  height: 25px; /* Ajusta la altura según tus necesidades */
+  height: 30px; /* Ajusta la altura según tus necesidades */
 }
 /* Estilo adicional para campos de entrada */
 .form-control.cuadro-pequeno {
   border: 1px solid #000; /* Borde negro */
-  height: 20px; /* Ajusta la altura según tus necesidades */
+  height: 30px; /* Ajusta la altura según tus necesidades */
 }
-
 .switch {
   position: relative;
   display: inline-block;
@@ -139,4 +129,29 @@ input:checked + .slider:before {
   -webkit-transform: translateX(26px);
   -ms-transform: translateX(26px);
   transform: translateX(26px);
+}
+table {
+  
+  border-collapse: collapse;
+  width: 20%;
+}
+
+th, td {
+  border: 1px solid white;
+  padding: 5px;
+  text-align: center;
+}
+
+
+h4 {
+  background-color: gray;
+}
+.tabla {
+  border-collapse: collapse;
+  width: 100%;
+}
+.borde{
+  border: 1px solid white;
+  padding: 8px;
+  text-align: center;
 }

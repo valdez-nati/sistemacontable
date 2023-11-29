@@ -8,20 +8,15 @@
 {% block title %}HOME{% endblock  %}
 
 {% block body %}
-<a class="btn btn-secondary bg-dark text-white" href={{url_for('logout')}} style="float: right;">Cerrar Sesion</a>
 <header class="navbar navbar-expand-md navbar-dark bg-dark sticky-top">
   <a class="navbar-brand fs-6 text-white" href="#">Estudio Contable YANA</a>
   <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSearch" aria-controls="navbarSearch" aria-expanded="false" aria-label="Toggle search">
     <span class="navbar-toggler-icon"></span>
   </button>
-  <button class="navbar-toggler" type="button" data-toggle="offcanvas" data-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
-    <span class="navbar-toggler-icon"></span>
-  </button>
-  <div class="collapse navbar-collapse" id="navbarSearch">
-    <form class="form-inline ml-auto">
-      <input class="form-control border-0 rounded-0" type="text" placeholder="Search" aria-label="Search">
-    </form>
+  <div class="ml-auto">
+    <a class="btn btn-secondary bg-dark text-white" href="{{url_for('logout')}}">Cerrar Sesión</a>
   </div>
+  
 </header>
 
 <div class="container-fluid">
@@ -101,12 +96,6 @@
 
     </div>
 
-
-    <!-- End of Enter New Student Modal -->
-
-
-
-
 <table class="table table-hover">
     <thead>
         <tr>
@@ -127,12 +116,16 @@
         <td>{{row.4}}</td>
         <td>{{row.5}}</td>
         <td>
-            <a href="/editarcliente/{{ row.5 }}"  class="btn btn-warning btn-sm" data-toggle="modal" data-target="#modaledit{{row.0}}">Editar</a>
-            <a href="/borrarcliente/{{ row.5 }}"  onclick="return confirm('¿Seguro que desea eliminar?')" class="btn btn-danger btn-sm">Eliminar</a>
-            <a href="/cargar/"  class="btn btn-danger btn-sm">Cargar</a>
-          
-
-        </td>
+          <div  class="button-row">
+            <a href="/editarcliente/{{ row.5 }}" class="btn btn-secondary btn-sm" data-toggle="modal" data-target="#modaledit{{row.0}}">Editar</a>
+            <a href="/cargar/" class="btn btn-secondary btn-sm">Balance</a>
+          </div>
+          <div  class="button-row">
+              <a href="/borrarcliente/{{ row.5 }}" onclick="return confirm('¿Seguro que desea eliminar?')" class="btn btn-danger btn-sm">Eliminar</a>
+              <a href="/cargar/" class="btn btn-secondary btn-sm">Cargar</a> 
+          </div>
+        
+      </td>
     </tr>
 
 

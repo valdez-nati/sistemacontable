@@ -129,6 +129,9 @@ def fact():
 def compra():
     return render_template('fact.html')
 
+@app.route("/venta/")
+def venta():
+    return render_template('venta.html')
 
     
 if __name__ == '__main__':

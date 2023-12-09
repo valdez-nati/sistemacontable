@@ -26,15 +26,21 @@
 
 <a href="/home"  class="btn btn-primary float-left">HOME</a>
 
+<h1>Comprobantes</h1>
 <div class="container">
+    <!-- Enlaces de compra y venta -->
     <div class="fila">
-        <a href="/compra" class="boton boton-azul">Compras</a>
-        <a href="/venta" class="boton boton-azul">Ventas</a>
+      <a href="/compra?idcliente={{ idcliente }}" class="boton boton-azul">Compras</a>
+      <a href="/venta?idcliente={{ idcliente }}" class="boton boton-azul">Ventas</a>
     </div>
+
     <div class="fila">
         <a href="/ingreso" class="boton boton-negro">Ingresos</a>
         <a href="/egreso" class="boton boton-negro">Egresos</a>
     </div>
 </div>
-
+<script>
+  
+  var idcliente = getParameterByName('idcliente'); 
+</script>
 {% endblock  %}

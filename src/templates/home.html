@@ -57,32 +57,32 @@
 
                 <div class="modal-body">
                     
-                    <form action="{{ url_for('nuevocliente')}}" method="POST">
+                    <form action="{{ url_for('nuevocliente')}}" method="POST" onsubmit="return validarFormulario()"> 
                       
                       <input type="hidden" name="csrf_token" value="{{csrf_token()}}"> <!--para que no tire error con el token-->
 
                         <div class="form-group">
                           <label>Nombres</label>
-                          <input type="text" name="nombre" class="form-control" id="exampleFormControlInput1" placeholder="">
+                          <input type="text" name="nombre" class="form-control" id="nombre" placeholder="">
                         </div>
 
                         <div class="form-group">
                             <label>Apellidos</label>
-                            <input type="text" name="apellido" class="form-control" id="exampleFormControlInput1" placeholder="">
+                            <input type="text" name="apellido" class="form-control" id="apellido" placeholder="">
                         </div>
 
                         <div class="form-group">
                             <label>Razon Social</label>
-                            <input name="razon" type="text" class="form-control" id="exampleFormControlInput1" placeholder="">
+                            <input type="text" name="razon" id="razon" class="form-control" placeholder="">
                           </div>
                           <div class="form-group">
                             <label>Correo Electronico</label>
-                            <input type="text" name="correo" class="form-control" id="exampleFormControlInput1" placeholder="">
+                            <input type="email" name="correo" class="form-control" id="correo" placeholder="">
                         </div>
 
                         <div class="form-group">
                             <label>RUC</label>
-                            <input type="text" name="ruc" class="form-control" id="exampleFormControlInput1" placeholder="">
+                            <input type="text" name="ruc" class="form-control" id="ruc" placeholder="">
                         </div>
 
                           <button type="submit" class="btn btn-primary mb-2">Guardar</button>
@@ -99,6 +99,7 @@
 <table class="table table-hover">
     <thead>
         <tr>
+            
             <th scope="col">Nombres</th>
             <th scope="col">Apellidos</th>
             <th scope="col">Razon Social</th>
@@ -110,19 +111,22 @@
     <tbody>
         {% for row in data %}
         <tr>
-        <td>{{row.1}}</td>
-        <td>{{row.2}}</td>
-        <td>{{row.3}}</td>
-        <td>{{row.4}}</td>
-        <td>{{row.5}}</td>
-        <td>
+          
+          <td>{{row.1}}</td>
+          <td>{{row.2}}</td>
+          <td>{{row.3}}</td>
+          <td>{{row.4}}</td>
+          <td>{{row.5}}</td>
+          <td>
           <div  class="button-row">
             <a href="/editarcliente/{{ row.5 }}" class="btn btn-secondary btn-sm" data-toggle="modal" data-target="#modaledit{{row.0}}">Editar</a>
             <a href="/cargar/" class="btn btn-secondary btn-sm">Balance</a>
           </div>
           <div  class="button-row">
               <a href="/borrarcliente/{{ row.5 }}" onclick="return confirm('¿Seguro que desea eliminar?')" class="btn btn-danger btn-sm">Eliminar</a>
-              <a href="/cargar/" class="btn btn-secondary btn-sm">Cargar</a> 
+              <!--<a onclick="abrirPrimerPaso('{{ row.0 }}')" class="btn btn-secondary btn-sm">Cargar</a> -->
+              <button onclick="cliente('{{ row.0 }}')" class="btn btn-secondary btn-sm"> Cargar </button>
+
           </div>
         
       </td>
@@ -150,26 +154,26 @@
 
                             <div class="form-group">
                               <label>Nombres</label>
-                              <input value="{{row.1}}" type="text" name="nombre" class="form-control" id="exampleFormControlInput1" placeholder="">
+                              <input value="{{row.1}}" type="text" name="nombre" class="form-control" id="nombre" placeholder="">
                             </div>
     
                             <div class="form-group">
                                 <label>Apellidos</label>
-                                <input value="{{row.2}}" type="text" name="apellido" class="form-control" id="exampleFormControlInput1" placeholder="">
+                                <input value="{{row.2}}" type="text" name="apellido" class="form-control" id="apellido" placeholder="">
                             </div>
                             
                             <div class="form-group">
                               <label>Razon Social</label>
-                              <input value="{{row.3}}" type="text" name="razon" class="form-control" id="exampleFormControlInput1" placeholder="">
+                              <input value="{{row.3}}" type="text" name="razon" class="form-control" id="razon" placeholder="">
                             </div>
                             <div class="form-group">
                               <label>Correo Electronico</label>
-                              <input value="{{row.4}}" type="text" name="correo" class="form-control" id="exampleFormControlInput1" placeholder="">
+                              <input value="{{row.4}}" type="email" name="correo" class="form-control" id="correo" placeholder="">
                             </div>
 
                             <div class="form-group">
                                 <label>RUC</label>
-                                <input value="{{row.5}}" name="ruc" type="text" class="form-control" id="exampleFormControlInput1" placeholder="">
+                                <input value="{{row.5}}" name="ruc" type="text" class="form-control" id="ruc" placeholder="">
                               </div>
     
                               <button type="submit" class="btn btn-success mb-2">Actualizar</button>
@@ -184,7 +188,7 @@
         </div>
     
     
-        <!-- End of Edit Student Modal -->
+       
 
 
 
@@ -194,7 +198,6 @@
 
 </table>
             </div>
-            <!-- Content ends here-->
 
 
             <div class="col-sm-2"></div>
@@ -206,4 +209,29 @@
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>    
+    <script>
+      function cliente(idcliente) {
+          
+          window.location.href = '/cargar/?idcliente=' + idcliente;
+      }
+      function validarFormulario() {
+        // Obtener el valor del  correo
+        var correo = document.getElementById('correo').value;
+        console.log('Correo:', correo);
+       
+        var patronCorreo = /^\w+([.-_+]?\w+)*@\w+([.-]?\w+)*(\.\w{2,10})+$/;
+
+    
+        
+        if (!patronCorreo.test(correo)) {
+            alert('Ingrese un correo electrónico válido');
+            return false; 
+        }
+    
+        
+        return true;
+      }
+      
+    </script>
+
 {%endblock%}

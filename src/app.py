@@ -60,7 +60,6 @@ def login():
     
     
 @app.route('/logout')
-@login_required
 def logout():
     logout_user()
     return redirect(url_for('login'))
@@ -77,8 +76,7 @@ def status_404(error):
 @app.route('/home')
 @login_required
 def home():
-    if not current_user.is_authenticated:
-        return redirect(url_for('login'))
+    #username = current_user.username 
 
     mycursor = db.connection.cursor()
     sql = "SELECT * FROM clientes"
@@ -89,12 +87,23 @@ def home():
 
     return render_template('home.html', data=data )
 
+@app.after_request
+def add_header(response):
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate'
+    return response
+    
+# @app.errorhandler(401)  
+# def unauthorized(error):
+#     return redirect(url_for('login'))    
+
+@app.errorhandler(401)  
+def unauthorized(e):
+    return redirect(url_for('login'), code=307)
 
     
-    
-
 # Insertar borrar y actualizar clientes
 @app.route('/nuevocliente', methods=['GET', 'POST'])
+@login_required
 def nuevocliente():   
     if request.method == 'POST': #para que inserte en la base de datos cuando trae informacion
         insertar()
@@ -103,6 +112,7 @@ def nuevocliente():
 
 
 @app.route("/editarcliente",methods= ['POST', 'GET'])# tiene que lamarse igual la funcion y la url/
+@login_required
 def editarcliente():
     if request.method == 'POST':
         actualizar()
@@ -110,6 +120,7 @@ def editarcliente():
         return redirect(url_for('home'))
 
 @app.route("/borrarcliente/<string:ruc>", methods=['GET'])
+@login_required
 def borrarcliente(ruc):
     flash("Cliente eliminado")
     mycursor = db.connection.cursor() #para asegurar la coneccion y el cierre se usa .connection
@@ -121,18 +132,43 @@ def borrarcliente(ruc):
 # ---------Carga de factura---------------
 
 @app.route("/cargar/")
+@login_required
 def fact():
-    return render_template('cargar.html')
+    
+    idcliente = request.args.get('idcliente')
+    return render_template('cargar.html', idcliente=idcliente)
 
     
 @app.route("/compra/")
+@login_required
 def compra():
     return render_template('fact.html')
 
 @app.route("/venta/")
+@login_required
 def venta():
     return render_template('venta.html')
 
+@app.route("/asiento_compra/",methods= ['POST', 'GET'])# tiene que lamarse igual la funcion y la url/
+@login_required
+def asiento_compra():
+    if request.method == 'POST':
+        selected_tipoc = request.form.get('tipoc')
+        fecha_value = request.form.get('fecha')
+        timbrado_value = request.form.get('timbrado')
+        ncomprobante_value = request.form.get('ncomprobante')
+        monto_gravado_10_value = request.form.get('monto_gravado_10')
+        monto_impuesto_10_value = request.form.get('monto_impuesto_10')
+        # Extract other values as needed
+
+        # Print or use the extracted values as required
+        print(f'Tipo de Comprobantes: {selected_tipoc}')
+        print(f'Fecha: {fecha_value}')
+        print(f'Timbrado: {timbrado_value}')
+        print(f'Numero de comprobante: {ncomprobante_value}')
+        print(f'Monto Gravado 10%: {monto_gravado_10_value}')
+        print(f'Monto Impuesto 10%: {monto_impuesto_10_value}')
+        return redirect(url_for('home'))
     
 if __name__ == '__main__':
     app.config.from_object(config['development'])

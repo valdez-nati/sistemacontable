@@ -79,7 +79,7 @@
       </div>
     </div>
 
-    <h4>Información del Proveedor/Vendedor</h4>
+    <h4>Información del Comprador del Bien o Servicio</h4>
 
     <div class="input-group">
       <label for="tipoid" style="text-align: right;">Tipo de Identificación:</label>
@@ -177,5 +177,8 @@
   function limpiarFormulario() {
     document.getElementById("miFormulario").reset();
   }
+
+  var idcliente = getParameterByName('idcliente');
+  console.log('ID del cliente:', idcliente);
 </script>
 {% endblock  %}

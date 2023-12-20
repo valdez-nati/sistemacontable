@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block customCSS %}
+<link rel="stylesheet" href="{{url_for('static', filename='css/carga.css')}}">
+{% endblock  %}
+
+
+
+
+{% block body %}
+
+<input type="hidden" name="csrf_token" value="{{csrf_token()}}"> <!--para que no tire error con el token-->
+<header class="navbar navbar-expand-md navbar-dark bg-dark sticky-top">
+  <a class="navbar-brand fs-6 text-white" href="#">Estudio Contable YANA</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSearch" aria-controls="navbarSearch" aria-expanded="false" aria-label="Toggle search">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <!-- Botón "Cerrar Sesión" alineado a la derecha -->
+  <div class="ml-auto">
+    <a class="btn btn-secondary bg-dark text-white" href="{{url_for('logout')}}">Cerrar Sesión</a>
+  </div>
+  <button class="navbar-toggler" type="button" data-toggle="offcanvas" data-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+</header>
+<br>
+<a href="/home"  class="btn btn-primary float-left">HOME</a>
+
+<h1 style="text-align: center:"";">Registro Diario</h1>
+<form method="post" action="/cargar_diario/" id="miFormulario">
+  <input type="hidden" name="csrf_token" id="csrf_token" value="{{csrf_token()}}">
+  <div class="container">
+      <div class="fila">
+        <label for="fecha">Fecha:</label>
+        <input type="date" name="fecha" id="fecha"class="form-control cuadro-pequeno">
+        
+        <label for="numeroasiento" class="label-ancho">Numero de asiento:</label>
+        <input type="number" name="numeroasiento" id="numeroasiento" class="form-control cuadro-pequeno" pattern="\d*">
+
+      </div>
+
+
+      <div class="fila">
+        <label for="descripcion">Descripción:</label>
+        <input type="text" name="descripcion" id="descripcion" class="form-control cuadro-pequeno">
+
+        <label for="cuentas" style="text-align: right;">Cuentas:</label>
+          <select id="cuentas" name="cuentas"  class="cuadro-pequeno">
+            {% for cuenta in data %}
+              <option value="{{ cuenta[0] }}">{{ cuenta[1] }}</option>
+            {% endfor %}
+          </select>
+      </div>
+
+      <div class="fila">
+        <label for="importe">Importe:</label>
+        <input type="number" name="importe" id="importe" class="form-control cuadro-pequeno">
+
+        <div class="custom-control custom-radio">
+          <input type="radio" name="debe" value="debe"> Debe
+
+        </div>
+        <div class="custom-control custom-radio">
+          <input type="radio" name="haber" value="haber"> Haber
+        </div>
+
+        
+      </div>
+      <button type="submit" class="btn btn-secondary float-right" >Guardar</button>
+
+
+  </div>
+
+
+</form>
+<script>
+  
+  var idcliente = getParameterByName('idcliente'); 
+</script>
+{% endblock  %}

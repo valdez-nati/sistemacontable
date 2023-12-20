@@ -3,10 +3,18 @@
 <link rel="stylesheet" href="{{url_for('static', filename='css/fact.css')}}">
 {% endblock  %}
 
+
 {% block title %}VISTA{% endblock  %}
 
 
 {% block body %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+{% if g.csrf_token %}
+    <script>
+        // Asigna el token CSRF a una variable JavaScript
+        var csrfToken = "{{ g.csrf_token() }}";
+    </script>
+{% endif %}
 <script src="{{ url_for('static', filename='js/compra.js') }}"></script>
 
 
@@ -32,24 +40,19 @@
 <input type="hidden" name="csrf_token" value="{{csrf_token()}}">
 <a href="/cargar/"  class="btn btn-primary float-left">Volver</a>
 
-<form action="/asiento_compra/" method="post" id="miFormulario">
+<form method="post" action="/cargar_compra/" id="miFormulario">
+  <input type="hidden" name="csrf_token" id="csrf_token" value="{{csrf_token()}}">
+
+
   <h4>Datos del comprobante</h4>
   <div class="div-container">
     
     <div class="input-group">
-      <label for="tipoc" style="text-align: right;">Tipo de Comprobantes:</label>
-      <select id="tipoc" name="tipoc"  class="cuadro-pequeno">
-          <option value="factura">Factura</option>
-          <option value="autofactura">Autofactura</option>
-          <option value="transporte">Boleta de transporte publico de pasajeros</option>
-          <option value="bventa">Boleta de venta</option>
-          <option value="bresimple">Boleta resimple</option>
-          <option value="bloteria">Boletos de loterias, juegos de azar </option>
-          <option value="despacho">Despacho de importación</option>
-          <option value="entrada">Entrada a espectaculos públicos</option>
-          <option value="ncredito">Nota de credito</option>
-          <option value="ndebito">Nota de debito</option>
-          <option value="ticket">Ticket maquina registradora</option>
+      <label for="tipocompras" style="text-align: right;">Tipo de Comprobantes:</label>
+      <select id="tipocompras" name="tipocompras"  class="cuadro-pequeno">
+        {% for op in tipocompras %}
+          <option value="{{op[1]}}">{{op[2]}}</option>
+        {% endfor %}
       </select>
       <label for="fecha">Fecha:</label>
       <input type="date" name="fecha" id="fecha"class="form-control cuadro-pequeno">
@@ -65,34 +68,34 @@
     <h4>Información de la Operación</h4>
     <div class="input-group">
       <div>
-        <label for="extranjera">Extranjera:</label><br>
-        <label class="switch">
-        <input type="checkbox">
-        <span class="slider round"></span>
-        </label>
+        <label for="moneda">Extranjera:</label><br>
+        <div class="custom-control custom-radio">
+          <input type="radio" name="moneda" value="true"> Sí
+          <input type="radio" name="moneda" value="false"> No
+        </div>
       </div>
+     
       <div>
         <label for="operacion">Condición de la operación:</label><br>
-        <label for="contado">Contado</label>
-        <label class="switch">
-            <input type="checkbox" onclick="toggleSwitch(this)">
-            <span class="slider round"></span>
-        </label>
-    
-        <label for="credito">Credito</label>
-        <label class="switch">
-            <input type="checkbox" onclick="toggleSwitch(this)">
-            <span class="slider round"></span>
-        </label>
+        <div class="custom-control custom-radio">
+          <input type="radio" name="condicion" value="contado"> Contado
+
+        </div>
+        <div class="custom-control custom-radio">
+          <input type="radio" name="condicion" value="credito"> Crédito
+        </div>
       </div>
     </div>
 
     <h4>Información del Proveedor/Vendedor</h4>
 
     <div class="input-group">
-      <label for="tipoid" style="text-align: right;">Tipo de Identificación:</label>
-      <select id="tipoid" name="tipoid"  class="cuadro-pequeno">
-        <option value="ruc">RUC</option>
+      <label for="idecompras" style="text-align: right;">Tipo de Identificación:</label>
+      <select id="idecompras" name="idecompras"  class="cuadro-pequeno">
+        {% for op in idecompras %}
+          <option value="{{op[1]}}">{{op[2]}}</option>  
+        {% endfor %}
+
       </select>
       <label for="numeroid">Numero de Identificación:</label>
       <input type="number" name="numeroid" id="numeroid" class="form-control cuadro-pequeno">
@@ -116,9 +119,9 @@
         </tr>
         <tr>
           <td><input type="number" value="0" class="form-control cuadro-pequeno" id="montoGravado10"></td>
-          <td><input type="number" value="0" class="form-control cuadro-pequeno" id="impuestoGravado10"></td>
+          <td  class="form-control cuadro-pequeno" id="total10" ></td>
           <td><input type="number" value="0" class="form-control cuadro-pequeno"  id="montoGravado5"></td>
-          <td><input type="number" value="0" class="form-control cuadro-pequeno" id="impuestoGravado5"></td>
+          <td  class="form-control cuadro-pequeno" id="total5"></td>
           <td><input type="number" value="0" class="form-control cuadro-pequeno"  id="montoExento"></td>
         </tr>
       </table>
@@ -127,7 +130,7 @@
       <table class="tabla">
         <tr>
           <th class="borde">Total IVA</th>
-          <td class="borde" id="totalIVA">0</td>
+          <td class="borde" id="totalIVA"></td>
         </tr>
         <tr>
           <th class="borde">Total Comprobante</th>
@@ -145,19 +148,20 @@
         <tr>
           <th>IVA General</th>
           <td>
-            <label class="switch">
-              <input type="checkbox" >
-              <span class="slider round"></span>
-          </label>
+            <div class="custom-control custom-radio">
+              <input type="radio" id="iva" name="iva" value="true" >Si
+              <input type="radio" id="iva" name="iva" value="false" >No
+
+            </div>
           </td>
         </tr>
         <tr>
-          <th>No Imputar</th>
+          <th >No Imputar</th>
           <td>
-            <label class="switch">
-              <input type="checkbox" >
-              <span class="slider round"></span>
-          </label>
+            <div class="custom-control custom-radio">
+              <input type="radio" id="imputa" name="imputa" value="true" >Si
+              <input type="radio" id="imputa" name="imputa" value="false" >No
+            </div>
           </td>
         </tr>
       </table>
@@ -167,11 +171,11 @@
         <a href="/home" class="btn btn-secondary">Cancelar</a>
         <button type="reset" class="btn btn-secondary" onclick="limpiarFormulario()">Limpiar</button>
       </div>
-      <a href="/home" class="btn btn-secondary float-right">Guardar</a>
+      <button type="submit" class="btn btn-secondary float-right" id="enviarDatosBoton">Guardar</button>
     </div>
 
 
-
+    <button type="submit" class="btn btn-secondary float-right" id="enviarDatosBoton">Guardar</button>
   </div>
 </form>
 {% endblock  %}

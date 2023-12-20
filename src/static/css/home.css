@@ -2,7 +2,7 @@ body {
   font-family: Arial, sans-serif;
 }
 .container {
-  max-width: 900px;
+  max-width: 1000px;
   margin: 0 auto;
   padding: 20px;
   border: 1px solid #ccc;
@@ -46,7 +46,7 @@ button[type="button"]:hover {
 }
 /* Estilo para la tabla */
 table {
-  width: 100%; /* Ancho de la tabla al 100% del contenedor */
+  width: 300%; /* Ancho de la tabla al 100% del contenedor */
   border-collapse: collapse; /* Colapso de bordes */
   margin-bottom: 20px; /* Espacio entre la tabla y elementos siguientes */
   font-family: Arial, sans-serif; /* Fuente de texto */
@@ -56,14 +56,14 @@ table {
 th {
   background-color: #333; /* Fondo gris oscuro */
   color: #fff; /* Texto blanco */
-  padding: 10px; /* Espacio interior de la celda */
+  padding: 12px; /* Espacio interior de la celda */
   text-align: left; /* Alineación del texto a la izquierda */
 }
 
 /* Estilo para las celdas del cuerpo */
 td {
   border: 1px solid #ccc; /* Borde delgado de color gris claro */
-  padding: 8px; /* Espacio interior de la celda */
+  padding: 12px; /* Espacio interior de la celda */
 }
 
 /* Estilo para filas impares */

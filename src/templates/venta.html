@@ -7,8 +7,14 @@
 
 
 {% block body %}
-
-
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+{% if g.csrf_token %}
+    <script>
+        // Asigna el token CSRF a una variable JavaScript
+        var csrfToken = "{{ g.csrf_token() }}";
+    </script>
+{% endif %}
+<script src="{{ url_for('static', filename='js/compra.js') }}"></script>
 <header class="navbar navbar-expand-md navbar-dark bg-dark sticky-top">
   <a class="navbar-brand fs-6 text-white" href="#">Estudio Contable YANA</a>
   <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSearch" aria-controls="navbarSearch" aria-expanded="false" aria-label="Toggle search">
@@ -27,21 +33,17 @@
 <input type="hidden" name="csrf_token" value="{{csrf_token()}}">
 <a href="/cargar/"  class="btn btn-primary float-left">Volver</a>
 
-<form action="/agregar_diario/" method="post" id="miFormulario">
+<form action="/asiento_compra/" method="post" id="miFormulario">
+  <input type="hidden" name="csrf_token" value="{{csrf_token()}}">
   <h4>Datos del comprobante</h4>
   <div class="div-container">
     
     <div class="input-group">
-      <label for="tipoc" style="text-align: right;">Tipo de Comprobantes:</label>
-      <select id="tipoc" name="tipoc"  class="cuadro-pequeno">
-          <option value="factura">Factura</option>
-          <option value="transporte">Boleta de transporte publico de pasajeros</option>
-          <option value="bventa">Boleta de venta</option>
-          <option value="bloteria">Boletos de loterias, juegos de azar </option>
-          <option value="entrada">Entrada a espectaculos públicos</option>
-          <option value="ncredito">Nota de credito</option>
-          <option value="ndebito">Nota de debito</option>
-          <option value="ticket">Ticket maquina registradora</option>
+      <label for="tipoventas" style="text-align: right;">Tipo de Comprobantes:</label>
+      <select id="tipoventas" name="tipoventas"  class="cuadro-pequeno">
+        {% for op in tipoventas %}
+          <option value="{{op[1]}}">{{op[2]}}</option>
+        {% endfor %}
       </select>
       <label for="fecha">Fecha:</label>
       <input type="date" name="fecha" id="fecha"class="form-control cuadro-pequeno">
@@ -58,41 +60,35 @@
     <div class="input-group">
       <div>
         <label for="extranjera">Extranjera:</label><br>
-        <label class="switch">
-        <input type="checkbox">
-        <span class="slider round"></span>
-        </label>
+        <div class="custom-control custom-radio">
+          
+          <input type="radio" id="moneda" name="moneda" class="custom-control-input">
+          <label class="custom-control-label" for="moneda"> </label>
+        </div>
       </div>
       <div>
         <label for="operacion">Condición de la operación:</label><br>
-        <label for="contado">Contado</label>
-        <label class="switch">
-            <input type="checkbox" onclick="toggleSwitch(this)">
-            <span class="slider round"></span>
-        </label>
-    
-        <label for="credito">Credito</label>
-        <label class="switch">
-            <input type="checkbox" onclick="toggleSwitch(this)">
-            <span class="slider round"></span>
-        </label>
+        <div class="custom-control custom-radio">
+          <input type="radio" id="contado" name="condicion" class="custom-control-input">
+          <label class="custom-control-label" for="contado"> Contado  </label>
+        </div>
+        <div class="custom-control custom-radio">
+          <input type="radio" id="credito" name="condicion" class="custom-control-input">
+          <label class="custom-control-label" for="credito">Credito</label>
+        </div>
       </div>
     </div>
 
     <h4>Información del Comprador del Bien o Servicio</h4>
 
     <div class="input-group">
-      <label for="tipoid" style="text-align: right;">Tipo de Identificación:</label>
-      <select id="tipoid" name="tipoid"  class="cuadro-pequeno">
-        <option value="ruc">RUC</option>
-        <option value="cin">Cedula de Identidad</option>
-        <option value="pasaporte">Pasaporte</option>
-        <option value="cie">Cedula Extranjera</option>
-        <option value="sin">Sin Nombre</option>
-        <option value="diplomatico">Diplomatico</option>
-        <option value="idt">Identificación Tributaria</option>
-        <option value="cliente">Cliente del Exterior</option>
-    </select>
+       <label for="ideventas" style="text-align: right;">Tipo de Identificación:</label>
+          <select id="ideventas" name="ideventas"  class="cuadro-pequeno">
+          {% for op in ideventas %}
+            <option value="{{op[1]}}">{{op[2]}}</option>  
+          {% endfor %}
+
+      </select>
       <label for="numeroid">Numero de Identificación:</label>
       <input type="number" name="numeroid" id="numeroid" class="form-control cuadro-pequeno">
     </div>
@@ -114,11 +110,11 @@
           <th>Monto No Gravado/Exento</th>
         </tr>
         <tr>
-          <td><input type="number" value="0" class="form-control cuadro-pequeno"></td>
-          <td><input type="number" value="0" class="form-control cuadro-pequeno"></td>
-          <td><input type="number" value="0" class="form-control cuadro-pequeno"></td>
-          <td><input type="number" value="0" class="form-control cuadro-pequeno"></td>
-          <td><input type="number" value="0" class="form-control cuadro-pequeno"></td>
+          <td><input type="number" value="0" class="form-control cuadro-pequeno" id="montoGravado10"></td>
+          <td  class="form-control cuadro-pequeno" id="total10"></td>
+          <td><input type="number" value="0" class="form-control cuadro-pequeno"  id="montoGravado5"></td>
+          <td  class="form-control cuadro-pequeno" id="total5"></td>
+          <td><input type="number" value="0" class="form-control cuadro-pequeno"  id="montoExento"></td>
         </tr>
       </table>
     </div>
@@ -126,11 +122,11 @@
       <table class="tabla">
         <tr>
           <th class="borde">Total IVA</th>
-          <td class="borde">0</td>
+          <td class="borde" id="totalIVA"></td>
         </tr>
         <tr>
           <th class="borde">Total Comprobante</th>
-          <td class="borde">0</td>
+          <td class="borde"  id="totalComprobante">0</td>
         </tr>
       </table>
     </div>
@@ -144,10 +140,10 @@
         <tr>
           <th>IVA General</th>
           <td>
-            <label class="switch">
-              <input type="checkbox" >
-              <span class="slider round"></span>
-          </label>
+            <div class="custom-control custom-radio">
+              <input type="radio" id="iva" name="iva" class="custom-control-input">
+              <label class="custom-control-label" for="iva">   </label>
+            </div>
           </td>
         </tr>        
       </table>
@@ -157,14 +153,14 @@
         <a href="/home" class="btn btn-secondary">Cancelar</a>
         <button type="reset" class="btn btn-secondary" onclick="limpiarFormulario()">Limpiar</button>
       </div>
-      <a href="/home" class="btn btn-secondary float-right">Guardar</a>
+      <button type="submit" class="btn btn-secondary float-right">Guardar</button>
     </div>
 
 
 
   </div>
 </form>
-<script>
+<!--<script>
   function toggleSwitch(clickedSwitch) {
     const allSwitches = document.querySelectorAll('.switch input');
 
@@ -180,5 +176,5 @@
 
   var idcliente = getParameterByName('idcliente');
   console.log('ID del cliente:', idcliente);
-</script>
+</script>-->
 {% endblock  %}

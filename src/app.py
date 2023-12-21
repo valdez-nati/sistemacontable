@@ -124,18 +124,20 @@ def borrarcliente(ruc):
     mycursor.close()
     return redirect(url_for('home'))
     
-# ---------Carga de factura---------------
+# ---------Carga de los asientos---------------
 
 @app.route("/cargar/")
 @login_required
 def fact():
     idcliente = request.args.get('idcliente')
     session['idcliente'] = idcliente
+    session['numeroasiento'] = 1 
     mycursor = db.connection.cursor()
     sql = "SELECT idplancuenta, descripcion FROM plancuentas WHERE imputable=1"
     mycursor.execute(sql)
     data = mycursor.fetchall()
     mycursor.close()
+    
     return render_template('cargar_diario.html', idcliente=idcliente, data=data)
 
     
@@ -143,35 +145,67 @@ def fact():
 @login_required
 def cargar_diario():
     try:
-        idcliente = session.get('idcliente')
-        fecha = request.form.get("fecha")
-        numeroasiento = request.form.get("numeroasiento")
-        descripcion = request.form.get("descripcion")
-        importe = request.form.get("importe")
-        debe = request.form.get("debe")
-        haber = request.form.get("haber")
-        cuentas = request.form.get("cuentas")
-        print("Fecha",fecha)
-        print("Numero de asiento:",numeroasiento)
-        print("Descripcion:",descripcion)
-        print("Importe:",importe)
-        print("Debe:",debe)
-        print("Haber:",haber)
-        print("Cuenta:",cuentas)
-        
-        print("CLIENTE:",idcliente)
-
         mycursor = db.connection.cursor()
-        sql = "INSERT INTO asientoregistro (fecha,numeroasiento,descripcion,clientefk) VALUES (%s, %s, %s, %s)"
-        val = (fecha,numeroasiento,descripcion,idcliente)
-        mycursor.execute(sql, val,)
-        db.connection.commit()
+        sql = "SELECT idplancuenta, descripcion FROM plancuentas WHERE imputable=1"
+        mycursor.execute(sql)
+        data = mycursor.fetchall()
         mycursor.close()
+        if 'numeroasiento' not in session:
+            session['numero_asiento'] = 1
+
+        if request.method == 'POST':
+
+            
+            idcliente = session.get('idcliente')
+            fecha = request.form.get("fecha")
+            #numeroasiento = request.form.get("numeroasiento")
+            numeroasiento = session['numeroasiento'] 
+            session['numeroasiento'] += 1
+
+            descripcion = request.form.get("descripcion")
+            importe = request.form.get("importe")
+            tipo = request.form.get("tipo")
+            cuentas = request.form.get("cuentas")
+            print("Fecha",fecha)
+            print("Numero de asiento:",numeroasiento)
+            print("Descripcion:",descripcion)
+            print("Importe:",importe)
+            print("Tipo:",tipo)
+            print("Cuenta:",cuentas)
+            
+            print("CLIENTE:",idcliente)
+            if tipo == "debe":
+                    debe = importe
+                    haber = 0
+            else:
+                    debe = 0
+                    haber = importe
+                    
+            print("Debe:",debe,"","Haber:",haber)
+            mycursor = db.connection.cursor()
+            sql = "INSERT INTO asientoregistro (fecha,numeroasiento,descripcion,clientefk) VALUES (%s, %s, %s, %s)"
+            val = (fecha,numeroasiento,descripcion,idcliente)
+            mycursor.execute(sql, val,)
+            db.connection.commit()
+            
+            idasiento = mycursor.lastrowid
+            
+            sql2=  "INSERT INTO asientodetalle (debe,haber,plancuentasfk,asientoregistrofk) VALUES (%s, %s, %s, %s)"
+            val2 = (debe,haber,cuentas,idasiento)
+            mycursor.execute(sql2, val2,)
+            db.connection.commit()
+            mycursor.close()
+            
+            
+            
+            
+            # return redirect(url_for('cargar_diario'))
+
+        return render_template('cargar_diario.html', numeroasiento=session['numeroasiento'], idcliente=session['idcliente'],data=data,descripcion=descripcion)
 
 
 
-
-        return render_template('cargar_diario.html')
+        #return render_template('cargar_diario.html')
     except Exception as e:
         # En caso de error, puedes imprimir o manejar el error de alguna manera
         print(f"Error: {str(e)}")

@@ -32,17 +32,17 @@
   <div class="container">
       <div class="fila">
         <label for="fecha">Fecha:</label>
-        <input type="date" name="fecha" id="fecha"class="form-control cuadro-pequeno">
+        <input type="date" name="fecha" id="fecha"class="form-control cuadro-pequeno" value="{{ request.form['fecha'] }}">
         
         <label for="numeroasiento" class="label-ancho">Numero de asiento:</label>
-        <input type="number" name="numeroasiento" id="numeroasiento" class="form-control cuadro-pequeno" pattern="\d*">
+        <input type="number" name="numeroasiento" value="{{ numeroasiento }}" class="form-control cuadro-pequeno" pattern="\d*">
 
       </div>
 
 
       <div class="fila">
         <label for="descripcion">Descripción:</label>
-        <input type="text" name="descripcion" id="descripcion" class="form-control cuadro-pequeno">
+        <input type="text" name="descripcion" id="descripcion" class="form-control cuadro-pequeno" value="{{ request.form['descripcion'] }}">
 
         <label for="cuentas" style="text-align: right;">Cuentas:</label>
           <select id="cuentas" name="cuentas"  class="cuadro-pequeno">
@@ -57,11 +57,11 @@
         <input type="number" name="importe" id="importe" class="form-control cuadro-pequeno">
 
         <div class="custom-control custom-radio">
-          <input type="radio" name="debe" value="debe"> Debe
+          <input type="radio" name="tipo" value="debe"> Debe
 
         </div>
         <div class="custom-control custom-radio">
-          <input type="radio" name="haber" value="haber"> Haber
+          <input type="radio" name="tipo" value="haber"> Haber
         </div>
 
         

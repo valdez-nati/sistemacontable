@@ -6,6 +6,8 @@ from config import config
 from flask_login import LoginManager, current_user, login_user, logout_user, login_required
 from flask_wtf.csrf import CSRFProtect
 
+from datetime import datetime
+
 #Modelos
 from models.ModelUser import ModelUser
 from models.entities.User import User
@@ -130,14 +132,14 @@ def borrarcliente(ruc):
 @login_required
 def fact():
     idcliente = request.args.get('idcliente')
+    
+    
     session['idcliente'] = idcliente
-    session['numeroasiento'] = 1 
     mycursor = db.connection.cursor()
     sql = "SELECT idplancuenta, descripcion FROM plancuentas WHERE imputable=1"
     mycursor.execute(sql)
     data = mycursor.fetchall()
     mycursor.close()
-    
     return render_template('cargar_diario.html', idcliente=idcliente, data=data)
 
     
@@ -150,22 +152,44 @@ def cargar_diario():
         mycursor.execute(sql)
         data = mycursor.fetchall()
         mycursor.close()
-        if 'numeroasiento' not in session:
-            session['numero_asiento'] = 1
+     
 
         if request.method == 'POST':
-
-            
-            idcliente = session.get('idcliente')
             fecha = request.form.get("fecha")
-            #numeroasiento = request.form.get("numeroasiento")
-            numeroasiento = session['numeroasiento'] 
-            session['numeroasiento'] += 1
-
             descripcion = request.form.get("descripcion")
             importe = request.form.get("importe")
             tipo = request.form.get("tipo")
             cuentas = request.form.get("cuentas")
+            
+            idcliente = session.get('idcliente')
+            mycursor = db.connection.cursor()
+            query = "SELECT idregistro, fecha, numeroasiento, descripcion FROM asientoregistro WHERE clientefk = %s ORDER BY numeroasiento DESC LIMIT 1"
+            mycursor.execute(query, (idcliente,))
+
+            resultado = mycursor.fetchone()
+
+            if resultado:
+                idasiento= resultado[0]
+                date = resultado[1]
+                numeroasiento_bd = resultado[2]
+                definicion = resultado[3]
+                
+                año = date.year
+                print("Fecha de base de datos:",año)    
+                if año != fecha:
+                    numeroasiento = 1
+                else:
+                 
+                    if descripcion != definicion:
+                        numeroasiento = numeroasiento_bd + 1
+                    else:
+                        numeroasiento = numeroasiento_bd
+            
+            else:
+                numeroasiento = resultado[2]
+                descripcion = resultado[3]
+            
+            
             print("Fecha",fecha)
             print("Numero de asiento:",numeroasiento)
             print("Descripcion:",descripcion)
@@ -178,18 +202,22 @@ def cargar_diario():
                     debe = importe
                     haber = 0
             else:
+                if tipo == "haber":
                     debe = 0
                     haber = importe
                     
             print("Debe:",debe,"","Haber:",haber)
+            
+            if descripcion != definicion:   
+                
+                sql = "INSERT INTO asientoregistro (fecha,numeroasiento,descripcion,clientefk) VALUES (%s, %s, %s, %s)"
+                val = (fecha,numeroasiento,descripcion,idcliente)
+                mycursor.execute(sql, val,)
+                db.connection.commit()
+                
+                idasiento = mycursor.lastrowid
+            
             mycursor = db.connection.cursor()
-            sql = "INSERT INTO asientoregistro (fecha,numeroasiento,descripcion,clientefk) VALUES (%s, %s, %s, %s)"
-            val = (fecha,numeroasiento,descripcion,idcliente)
-            mycursor.execute(sql, val,)
-            db.connection.commit()
-            
-            idasiento = mycursor.lastrowid
-            
             sql2=  "INSERT INTO asientodetalle (debe,haber,plancuentasfk,asientoregistrofk) VALUES (%s, %s, %s, %s)"
             val2 = (debe,haber,cuentas,idasiento)
             mycursor.execute(sql2, val2,)
@@ -201,7 +229,7 @@ def cargar_diario():
             
             # return redirect(url_for('cargar_diario'))
 
-        return render_template('cargar_diario.html', numeroasiento=session['numeroasiento'], idcliente=session['idcliente'],data=data,descripcion=descripcion)
+        return render_template('cargar_diario.html',idcliente=session['idcliente'],data=data,descripcion=descripcion, numeroasiento=numeroasiento)
 
 
 

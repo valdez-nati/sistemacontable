@@ -1,11 +1,11 @@
+import os
 from flask import Flask, render_template, request, redirect, url_for, flash,jsonify,session
 from flask_mysqldb import MySQL
 from werkzeug.security import check_password_hash
 from config import config
-#from crud.cliente import insertar, actualizar, borrar
 from flask_login import LoginManager, current_user, login_user, logout_user, login_required
 from flask_wtf.csrf import CSRFProtect
-
+import pandas as pd
 from datetime import datetime
 
 #Modelos
@@ -140,9 +140,123 @@ def fact():
     mycursor.execute(sql)
     data = mycursor.fetchall()
     mycursor.close()
-    return render_template('cargar_diario.html', idcliente=idcliente, data=data)
+    # Consulta para obtener los años únicos asociados al cliente
+    mycursor = db.connection.cursor()
+    sql_years = "SELECT DISTINCT YEAR(fecha) AS year FROM asientoregistro WHERE clientefk = %s"
+    mycursor.execute(sql_years, (idcliente,))
+    years_data = mycursor.fetchall()
+    
+    # Obtén la lista de años desde los resultados
+    list = [year[0] for year in years_data]
 
     
+    
+    mycursor.close()
+    
+    
+    
+    
+    return render_template('cargar_diario.html', idcliente=idcliente, data=data,list=list)
+
+    
+# @app.route("/cargar_diario/",methods= ['POST', 'GET'])
+# @login_required
+# def cargar_diario():
+#     try:
+#         mycursor = db.connection.cursor()
+#         sql = "SELECT idplancuenta, descripcion FROM plancuentas WHERE imputable=1"
+#         mycursor.execute(sql)
+#         data = mycursor.fetchall()
+#         mycursor.close()
+     
+
+#         if request.method == 'POST':
+#             fecha = request.form.get("fecha")
+#             descripcion = request.form.get("descripcion")
+#             importe = request.form.get("importe")
+#             tipo = request.form.get("tipo")
+#             cuentas = request.form.get("cuentas")
+            
+#             idcliente = session.get('idcliente')
+#             mycursor = db.connection.cursor()
+#             query = "SELECT idregistro, fecha, numeroasiento, descripcion FROM asientoregistro WHERE clientefk = %s ORDER BY numeroasiento DESC LIMIT 1"
+#             mycursor.execute(query, (idcliente,))z
+
+#             resultado = mycursor.fetchone()
+
+#             if resultado :
+#                 idasiento= resultado[0]
+#                 date = resultado[1]
+#                 numeroasiento_bd = resultado[2]
+#                 definicion = resultado[3]
+                
+#                 año = date.year
+#                 print("Fecha de base de datos:",año)    
+#                 if año != fecha:
+#                     numeroasiento = 1
+#                 else:
+                 
+#                     if descripcion != definicion:
+#                         numeroasiento = numeroasiento_bd + 1
+#                     else:
+#                         numeroasiento = numeroasiento_bd
+            
+#             else:
+#                 numeroasiento = resultado[2]
+#                 descripcion = resultado[3]
+            
+            
+#             print("Fecha",fecha)
+#             print("Numero de asiento:",numeroasiento)
+#             print("Descripcion:",descripcion)
+#             print("Importe:",importe)
+#             print("Tipo:",tipo)
+#             print("Cuenta:",cuentas)
+            
+#             print("CLIENTE:",idcliente)
+#             if tipo == "debe":
+#                     debe = importe
+#                     haber = 0
+#             else:
+#                 if tipo == "haber":
+#                     debe = 0
+#                     haber = importe
+                    
+#             print("Debe:",debe,"","Haber:",haber)
+            
+#             if descripcion != definicion:   
+                
+#                 sql = "INSERT INTO asientoregistro (fecha,numeroasiento,descripcion,clientefk) VALUES (%s, %s, %s, %s)"
+#                 val = (fecha,numeroasiento,descripcion,idcliente)
+#                 mycursor.execute(sql, val,)
+#                 db.connection.commit()
+                
+#                 idasiento = mycursor.lastrowid
+            
+#             mycursor = db.connection.cursor()
+#             sql2=  "INSERT INTO asientodetalle (debe,haber,plancuentasfk,asientoregistrofk) VALUES (%s, %s, %s, %s)"
+#             val2 = (debe,haber,cuentas,idasiento)
+#             mycursor.execute(sql2, val2,)
+#             db.connection.commit()
+#             mycursor.close()
+#         else:
+            
+#             print("Error: Request method is not POST")
+#             return render_template('cargar_diario.html', idcliente=session['idcliente'], data=data)
+            
+            
+
+#         return render_template('cargar_diario.html',idcliente=session['idcliente'],data=data,descripcion=descripcion, numeroasiento=numeroasiento)
+
+
+
+#     except Exception as e:
+#         # En caso de error, puedes imprimir o manejar el error de alguna manera
+#         print(f"Error: {str(e)}")
+#         return jsonify({'success': False, 'error': str(e)})
+
+
+
 @app.route("/cargar_diario/",methods= ['POST', 'GET'])
 @login_required
 def cargar_diario():
@@ -153,43 +267,104 @@ def cargar_diario():
         data = mycursor.fetchall()
         mycursor.close()
      
-
+        
         if request.method == 'POST':
             fecha = request.form.get("fecha")
             descripcion = request.form.get("descripcion")
             importe = request.form.get("importe")
             tipo = request.form.get("tipo")
             cuentas = request.form.get("cuentas")
-            
+            #para poder sacar el año de la fecha            
+            fechaform= datetime.strptime(fecha, "%Y-%m-%d")
+            print("Convertio:", fechaform.year)
+            añoform= fechaform.year
             idcliente = session.get('idcliente')
             mycursor = db.connection.cursor()
-            query = "SELECT idregistro, fecha, numeroasiento, descripcion FROM asientoregistro WHERE clientefk = %s ORDER BY numeroasiento DESC LIMIT 1"
-            mycursor.execute(query, (idcliente,))
-
-            resultado = mycursor.fetchone()
-
+            definicion = None
+            query = "SELECT idregistro, fecha, numeroasiento, descripcion FROM asientoregistro WHERE clientefk = %s AND YEAR (fecha)=%s ORDER BY numeroasiento DESC LIMIT 1"
+            try:
+                mycursor.execute(query, (idcliente,añoform, ))
+                
+                resultado = mycursor.fetchone()
+                print("Consulta ultimo registro",resultado)
+            except Exception as e:
+                        print("Error executing query:", e)
+            finally:
+                    mycursor.close()
             if resultado:
-                idasiento= resultado[0]
+                idasiento = resultado[0]
                 date = resultado[1]
                 numeroasiento_bd = resultado[2]
                 definicion = resultado[3]
-                
+                print("Definicion",definicion)
                 año = date.year
                 print("Fecha de base de datos:",año)    
-                if año != fecha:
+                print("Numero de base de datos:",numeroasiento_bd)
+                if año != añoform :
+                    print("Se quedo aca....")
+            
+                    mycursor = db.connection.cursor()
+                    query = """
+                            SELECT
+                                ad.plancuentasfk,
+                                ar.clientefk,
+                                SUM(ad.debe) AS totaldebe,
+                                SUM(ad.haber) AS totalhaber
+                            FROM 
+                                asientodetalle ad
+                            JOIN
+                                asientoregistro ar ON ad.asientoregistrofk = ar.idregistro
+                            WHERE
+                                ar.clientefk = %s AND YEAR(ar.fecha)  = %s 
+                            GROUP BY
+                                ad.plancuentasfk, ar.clientefk;
+                            """
+
+                    try:
+                        mycursor.execute(query, (idcliente, año,))
+                        resultados = mycursor.fetchall()
+                        print("Consulta de totales", resultados)
+                    except Exception as e:
+                        print("Error executing query:", e)
+                    finally:
+                        mycursor.close()
+                    try:
+                        for row in resultados:
+                            plancuentasfk, clientefk, totaldebe, totalhaber = row
+                            print("Para insertar:",row) 
+                            mycursor = db.connection.cursor()
+                            query1= "INSERT INTO mayor (plancuentasfk, clientefk, totaldebe, totalhaber, periodo) VALUES (%s, %s, %s, %s,%s)"
+                            res = (plancuentasfk, clientefk, totaldebe, totalhaber,año)
+                            mycursor.execute(query1, res,)
+                            db.connection.commit()
+                
+                        print("resutaldos:",resultados[0], resultados[1])
+                    except Exception as e:
+                        # Handle any exceptions
+                        print("Error during insertion:", e)
+
+                    finally:
+                        # Close the cursor
+                        mycursor.close()
                     numeroasiento = 1
                 else:
-                 
                     if descripcion != definicion:
+                        print("Entro para sumar")
                         numeroasiento = numeroasiento_bd + 1
                     else:
+                        print("numero de asiento igual")
                         numeroasiento = numeroasiento_bd
-            
+
+                        
+                        
+                        
+                        
+                        
             else:
-                numeroasiento = resultado[2]
-                descripcion = resultado[3]
-            
-            
+                idasiento = 1
+                numeroasiento = 1
+                
+
             print("Fecha",fecha)
             print("Numero de asiento:",numeroasiento)
             print("Descripcion:",descripcion)
@@ -199,17 +374,17 @@ def cargar_diario():
             
             print("CLIENTE:",idcliente)
             if tipo == "debe":
-                    debe = importe
-                    haber = 0
+                debe = importe
+                haber = 0
             else:
                 if tipo == "haber":
                     debe = 0
                     haber = importe
-                    
+                            
             print("Debe:",debe,"","Haber:",haber)
             
-            if descripcion != definicion:   
-                
+            if (descripcion != definicion) or  (idasiento ==1 and definicion is None):   
+                mycursor = db.connection.cursor()
                 sql = "INSERT INTO asientoregistro (fecha,numeroasiento,descripcion,clientefk) VALUES (%s, %s, %s, %s)"
                 val = (fecha,numeroasiento,descripcion,idcliente)
                 mycursor.execute(sql, val,)
@@ -223,13 +398,8 @@ def cargar_diario():
             mycursor.execute(sql2, val2,)
             db.connection.commit()
             mycursor.close()
-            
-            
-            
-            
-            # return redirect(url_for('cargar_diario'))
 
-        return render_template('cargar_diario.html',idcliente=session['idcliente'],data=data,descripcion=descripcion, numeroasiento=numeroasiento)
+            return render_template('cargar_diario.html',idcliente=session['idcliente'],data=data,descripcion=descripcion, numeroasiento=numeroasiento)
 
 
 
@@ -239,39 +409,29 @@ def cargar_diario():
         print(f"Error: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
 
-
-@app.route("/venta/")
+@app.route('/exportar_diario')
 @login_required
-def venta():
-    mycursor = db.connection.cursor()
+def exportar_excel():
+    try:
+        idcliente = session.get('idcliente')
+        mycursor = db.connection.cursor()
+        sql = "SELECT  descripcion FROM asientoregistro WHERE clientefk = %s"
+        mycursor.execute(sql, (idcliente,))
+        data = mycursor.fetchall()
+        df = pd.DataFrame(data)
+        carpeta_destino = 'C:/Users/Naty/OneDrive/Documentos'
 
-    sql = """
-        SELECT 
-            'tipoventas' AS tipo, 
-            idtipoventa AS id,
-            descripcion
-        FROM tipoventas
+        ruta_archivo = os.path.join(carpeta_destino, 'descripcion.xlsx')
 
-        UNION 
+        df.to_excel(ruta_archivo, index=False)
+        print("Directorio de trabajo actual:", os.getcwd())
 
-        SELECT
-            'ideventas' AS tipo,
-            ideventa AS id, 
-            descripcion
-        FROM ideventas
-    """
-
-    mycursor.execute(sql)
-    resultados = mycursor.fetchall()
-
-    tipoventas = [r for r in resultados if r[0] == 'tipoventas']
-    ideventas = [r for r in resultados if r[0] == 'ideventas']
-
-    print(tipoventas)
- 
-    print(ideventas)
-    return render_template('venta.html',tipoventas=tipoventas,ideventas=ideventas)
-
+        flash("Excel generado con éxito...")
+        return redirect(url_for('home'))
+    except Exception as e:
+        # En caso de error, puedes imprimir o manejar el error de alguna manera
+        print(f"Error: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
 
             
 @app.route("/obtener_compra/",methods= ['POST', 'GET'])# tiene que llamarse igual la funcion y la url/

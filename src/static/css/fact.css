@@ -1,80 +1,81 @@
-/* Form styling */
-form {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 20px;
-  background-color: #f8f9fa;
-  border: 1px solid #ced4da;
-  border-radius: 5px;
+body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
 }
-/* Label alignment */
-.linea-labels label {
-  margin-right: 10px;
-}
-/* Input and select styling */
-.input-group {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-.input-group input,
-.input-group select {
-  flex: 1;
-  margin-right: 10px;
-}
-
-
-/* Ajustar el tamaño del cuadro de selección */
-.cuadro-pequeno {
-  width: 150px; 
-  border: 1px solid #000; 
-  height: 30px; 
-}
-/* Ajustar el tamaño del campo de fecha */
-#linea-labels input[type="date"] {
-  width: 150px;
-  border: 1px solid #000; /* Borde negro */
-  height: 30px; /* Ajusta la altura según tus necesidades */
-}
-/* Estilo adicional para campos de entrada */
-.form-control.cuadro-pequeno {
-  border: 1px solid #000; /* Borde negro */
-  height: 30px; /* Ajusta la altura según tus necesidades */
-}
-
-
-
-
-
 
 
 table {
-  
+  width: 100%;
   border-collapse: collapse;
-  width: 20%;
+  margin-top: 20px;
 }
 
 th, td {
-  border: 1px solid white;
-  padding: 5px;
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+th {
+  background-color: #f2f2f2;
+}
+
+.btn {
+  text-decoration: none;
+  padding: 8px 12px;
+  margin: 4px;
+  border-radius: 4px;
   text-align: center;
 }
 
-
-h4 {
-  background-color: gray;
+.btn-primary {
+  background-color: #007bff;
+  color: #fff;
 }
-.tabla {
-  border-collapse: collapse;
+
+.btn-danger {
+  background-color: #dc3545;
+  color: #fff;
+}
+
+.float-left {
+  float: left;
+}
+.edit-field {
   width: 100%;
 }
-.borde{
-  border: 1px solid white;
- /* padding: 8px;*/
-  text-align: center;
+
+.static-display {
+  display: inline;
+}
+form {
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
 }
 
-.custom-control {
-  text-align: center; 
-  
+h5 {
+  margin-bottom: 10px;
+}
+
+select, button {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+}
+
+button {
+  background-color: #091eda;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  padding: 10px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #45a049;
 }

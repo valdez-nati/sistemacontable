@@ -119,13 +119,17 @@
           <td>{{row.5}}</td>
           <td>
           <div  class="button-row">
-            <a href="/editarcliente/{{ row.5 }}" class="btn btn-secondary btn-sm" data-toggle="modal" data-target="#modaledit{{row.0}}">Editar</a>
-            <a href="/cargar/" class="btn btn-secondary btn-sm">Balance</a>
+            {% if id == 1 %}
+             <a href="/editarcliente/{{ row.5 }}" class="btn btn-secondary btn-sm" data-toggle="modal" data-target="#modaledit{{row.0}}">Editar</a>
+            {% endif %}
+            <button onclick="cliente('{{ row.0 }}')" class="btn btn-secondary btn-sm"> Cargar </button>
           </div>
           <div  class="button-row">
+            {% if id == 1 %}
               <a href="/borrarcliente/{{ row.5 }}" onclick="return confirm('¿Seguro que desea eliminar?')" class="btn btn-danger btn-sm">Eliminar</a>
+            {% endif %}
               <!--<a onclick="abrirPrimerPaso('{{ row.0 }}')" class="btn btn-secondary btn-sm">Cargar</a> -->
-              <button onclick="cliente('{{ row.0 }}')" class="btn btn-secondary btn-sm"> Cargar </button>
+              
 
           </div>
         

@@ -24,10 +24,20 @@
   </button>
 </header>
 <br>
-<a href="/home"  class="btn btn-primary float-left">HOME</a>
 
 <h1 style="text-align: center:"";">Registro Diario</h1>
-<form method="post" action="/cargar_diario/" id="miFormulario">
+
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
+        <ul class="flash-messages">
+            {% for message in messages %}
+                <li>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+{% endwith %}
+
+<form method="post" action="/cargar_diario/" id="miFormulario" onsubmit="return confirmSubmit();">
   <input type="hidden" name="csrf_token" id="csrf_token" value="{{csrf_token()}}">
   <div class="container">
       <div class="fila">
@@ -35,7 +45,7 @@
         <input type="date" name="fecha" id="fecha"class="form-control cuadro-pequeno" value="{{ request.form['fecha'] }}">
         
         <label for="numeroasiento" class="label-ancho">Numero de asiento:</label>
-        <input type="number" name="numeroasiento" value="{{ numeroasiento }}" class="form-control cuadro-pequeno" pattern="\d*">
+        <input type="number" name="numeroasiento" value="{{ numeroasiento }}" class="form-control cuadro-pequeno" disabled pattern="\d*">
 
       </div>
 
@@ -47,7 +57,7 @@
         <label for="cuentas" style="text-align: right;">Cuentas:</label>
           <select id="cuentas" name="cuentas">
             {% for cuenta in data %}
-              <option value="{{ cuenta[0] }}">{{ cuenta[1] }}</option>
+              <option value="{{ cuenta[0] }}">{{ cuenta[1] }} - {{ cuenta[2] }}</option>
             {% endfor %}
           </select>
       </div>
@@ -64,32 +74,29 @@
           <input type="radio" name="tipo" value="haber"> Haber
         </div>
 
-        
+        <button type="submit" class="btn btn-secondary float-right" >Guardar</button>
       </div>
-      <button type="submit" class="btn btn-secondary float-right" >Guardar</button>
-      <a href="/exportar_diario"  class="btn btn-secondary float-left">Exportar</a>
+     
+     
 
 
   </div>
 
 
 </form>
-<h3>Seleccione un año:</h3>
-    
-    <form method="post" action="/procesar_datos">
-        <!-- Agrega el combo (select) para mostrar los años -->
-        <select name="año">
-            {% for year in list %}
-            <option value="{{ year }}" {% if year == request.args.get('list') %}selected{% endif %}>{{ year }}</option>
-            {% endfor %}
-        </select>
 
-        <!-- Resto del formulario y elementos HTML -->
-        
-        <button type="submit">Exportar Diario</button>
-    </form>
+<div class="container">
+  <a href="/registros"  class="btn btn-primary ">Diario</a>
+  <a href="/mayor"  class="btn btn-primary ">Mayor</a>
+
+  <a href="/balance"  class="btn btn-primary ">Balance</a>
+
+
+ </div>
 <script>
   
   var idcliente = getParameterByName('idcliente'); 
+ 
+
 </script>
 {% endblock  %}

@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block customCSS %}
+<link rel="stylesheet" href="{{url_for('static', filename='css/fact.css')}}">
+{% endblock  %}
+
+{% block title %}MAYOR{% endblock  %}
+
+
+{% block body %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script src="{{ url_for('static', filename='js/compra.js') }}"></script>
+<header class="navbar navbar-expand-md navbar-dark bg-dark sticky-top">
+  <a class="navbar-brand fs-6 text-white" href="#">Estudio Contable YANA</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSearch" aria-controls="navbarSearch" aria-expanded="false" aria-label="Toggle search">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="ml-auto">
+    <a class="btn btn-secondary bg-dark text-white" href="{{url_for('logout')}}">Cerrar Sesión</a>
+  </div>
+  <button class="navbar-toggler" type="button" data-toggle="offcanvas" data-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+</header>
+
+
+<h1  style="text-align: center">Mayor</h1>
+<input type="hidden" name="csrf_token" value="{{csrf_token()}}">
+
+
+<div style="text-align: center;">
+  <form method="post" action="/mes_mayor">
+    <input type="hidden" name="csrf_token" id="csrf_token" value="{{csrf_token()}}">
+    
+    <label for="cuentas" style="text-align: right;">Cuenta:</label>
+    <select id="cuentas" name="cuentas">
+      {% for cuenta in data %}
+        <option value="{{ cuenta[0] }}">{{ cuenta[1] }} - {{ cuenta[2] }}</option>
+      {% endfor %}
+    </select>
+
+    <label for="year" style="text-align: right;">Año:</label>
+    <select name="year" class="form-select">
+        {% for year in lis %}
+            <option value="{{ year }}" {% if year == request.args.get('lis') %}selected{% endif %}>{{ year }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit">Mostrar </button>
+  </form>
+  <form method="post" action="/mayor_excel">
+    <input type="hidden" name="csrf_token" value="{{csrf_token()}}">
+    <input type="hidden" name="cuentas" value="{{ request.form.get('cuentas') }}">
+    <input type="hidden" name="year" value="{{ request.form.get('year') }}">
+    <button type="submit" class="btn btn-success">Exportar a Excel</button>
+  </form>
+</div>
+
+    
+<div style="text-align: center; margin-top: 10px;">
+      
+
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
+        <ul class="flash-messages">
+            {% for message in messages %}
+                <li>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+{% endwith %}
+
+<table>
+  <thead>
+    <tr>
+      <th>Fecha</th>
+      <th>Cuentas</th>
+      <th>Asiento</th>
+      <th>Descripción</th>
+      <th>Debe</th>
+      <th>Haber</th>
+      <th>Saldo</th>
+    </tr>
+  </thead>
+  
+  <tbody>
+
+  {% for libro in libros %}
+    <tr>
+      <td>{{ libro.0 }}</td>
+      <td>{{ libro.1 }}</td>
+      <td>{{ libro.2 }}</td>
+      <td>{{ libro.3 }}</td> 
+      <td>{{ libro.4 }}</td>
+      <td>{{ libro.5 }}</td>
+      <td>{{ libro.6 }}</td>
+    </tr>
+  {% endfor %}
+  
+  </tbody>
+</table>
+
+{% endblock  %}

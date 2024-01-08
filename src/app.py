@@ -154,44 +154,13 @@ def borrarcliente(ruc):
    
 # ---------Carga de los asientos---------------
 
-@app.route("/cargar/")
-@login_required
-def fact():
-    idcliente = request.args.get('idcliente')
-    
-    
-    session['idcliente'] = idcliente
-    mycursor = db.connection.cursor()
-    sql = "SELECT idplancuenta, codigo,descripcion FROM plancuentas WHERE imputable=1"
-    mycursor.execute(sql)
-    data = mycursor.fetchall()
-    mycursor.close()
-    # Consulta para obtener los años únicos asociados al cliente
-    mycursor = db.connection.cursor()
-    sql_years = "SELECT DISTINCT YEAR(fecha) AS year FROM asientoregistro WHERE clientefk = %s"
-    mycursor.execute(sql_years, (idcliente,))
-    years_data = mycursor.fetchall()
-    
-    # Obtén la lista de años desde los resultados
-    list = [year[0] for year in years_data]
-
-    
-    
-    mycursor.close()
-    
-    
-    idrol = session.get('idrol')
-    id=idrol
-    
-    return render_template('cargar_diario.html', idcliente=idcliente, data=data,list=list, id=id)
 
 
 
 
 
 
-
-@app.route("/cargar_diario/",methods= ['POST', 'GET'])
+@app.route("/cargar_diario",methods= ['POST', 'GET'])
 @login_required
 def cargar_diario():
     try:
@@ -199,7 +168,7 @@ def cargar_diario():
         sql = "SELECT idplancuenta, codigo, descripcion FROM plancuentas WHERE imputable=1"
         mycursor.execute(sql)
         data = mycursor.fetchall()
-       
+        session['data'] = data
         idcliente = session.get('idcliente')
         print("cliente", idcliente)
         último_año = "SELECT MAX(YEAR(fecha)) FROM asientoregistro WHERE clientefk=%s"
@@ -208,7 +177,9 @@ def cargar_diario():
         mycursor.close()
         if request.method == 'POST':
             fecha = request.form.get("fecha")
+            session['fecha'] = fecha
             descripcion = request.form.get("descripcion")
+            session['descripcion'] = descripcion
             print("desctripcion",descripcion)
             importe = request.form.get("importe")
             descripcion_ultima = ""
@@ -239,37 +210,45 @@ def cargar_diario():
             print("año permitido",año_permitido)
             if año_permitido is not None  :
                 print("entro en el if de año permitido")
-                if último is not None or  id == 1: 
+                if último is not None: 
                     print("entro en el if de ultimo ")
                     if añoform == año_permitido or id==1 : 
+                       
+                            descripcion_ultima = último[1]
 
-                        descripcion_ultima = último[1]
-
-                        if descripcion != descripcion_ultima:
-                            # Incrementar número
-                            print("Entro para sumar")
-                            mycursor = db.connection.cursor()
-                            siguiente_asiento = "SELECT MAX(numeroasiento) + 1 FROM asientoregistro WHERE clientefk=%s AND YEAR(fecha)=%s;" 
-                            
-                        else: 
-                            # Mantener mismo número
-                            print("numero de asiento igual")
-                            mycursor = db.connection.cursor()
-                            siguiente_asiento = "SELECT MAX(numeroasiento) FROM asientoregistro WHERE clientefk=%s AND YEAR(fecha)=%s;"
-                            
-                        # Ejecutar consulta para obtener número siguiente
-                        mycursor.execute(siguiente_asiento, (idcliente, añoform))
-                        numeroasiento = mycursor.fetchone()[0]
+                            if descripcion != descripcion_ultima:
+                                # Incrementar número
+                                print("Entro para sumar")
+                                mycursor = db.connection.cursor()
+                                siguiente_asiento = "SELECT MAX(numeroasiento) + 1 FROM asientoregistro WHERE clientefk=%s AND YEAR(fecha)=%s;" 
+                                
+                            else: 
+                                # Mantener mismo número
+                                print("numero de asiento igual")
+                                mycursor = db.connection.cursor()
+                                siguiente_asiento = "SELECT MAX(numeroasiento) FROM asientoregistro WHERE clientefk=%s AND YEAR(fecha)=%s;"
+                                
+                            # Ejecutar consulta para obtener número siguiente
+                            mycursor.execute(siguiente_asiento, (idcliente, añoform))
+                            numeroasiento = mycursor.fetchone()[0]
+                         
                     else:
                         # Mensaje de error 
                         flash("No puede insertar para ese año")
                         return redirect(url_for('cargar_diario'))         
+                else:
+                    print("inserta en periodo")
+                    sql = "INSERT INTO periodos (periodo,clientefk) VALUES (%s, %s)"
+                    val = (añoform,idcliente)
+                    mycursor.execute(sql, val,)
+                    db.connection.commit()
+                        
+                    
+                    numeroasiento = 1
+            
             else:
                 print("si entro en el sino")
-                sql = "INSERT INTO periodos (periodo,clientefk) VALUES (%s, %s)"
-                val = (añoform,idcliente)
-                mycursor.execute(sql, val,)
-                db.connection.commit()
+              
                 
                 idasiento = 1
                 numeroasiento = 1
@@ -343,49 +322,60 @@ def cargar_diario():
             mycursor.close()
    
                                 
-        return render_template('cargar_diario.html',idcliente=session['idcliente'],data=data,descripcion=descripcion, numeroasiento=numeroasiento)
+        #return render_template('cargar_diario.html',idcliente=session['idcliente'],data=data,descripcion=descripcion, numeroasiento=numeroasiento)
+        return redirect(url_for('fact'))
 
-
-
-        
+     
     except Exception as e:
         # En caso de error, puedes imprimir o manejar el error de alguna manera
         print(f"Error: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
 
 
-# def insertar_mayor(mycursor, idcliente, añoform, plan, mdebe, mhaber):
-#     mycursor = db.connection.cursor()
-#     sql2=  "INSERT INTO mayor (totaldebe,totalhaber,periodo,plancuentasfk,clientefk	) VALUES (%s, %s, %s, %s, %s)"
-#     val2 = (mdebe,mhaber,añoform,plan,idcliente)
-#     mycursor.execute(sql2, val2,)
-#     db.connection.commit()
-#     mycursor.close()
 
 
+@app.route("/cargar/")
+@login_required
+def fact():
+    idcliente = request.args.get('idcliente')
+    
+    
+    session['idcliente'] = idcliente
+    mycursor = db.connection.cursor()
+    sql = "SELECT idplancuenta, codigo,descripcion FROM plancuentas WHERE imputable=1"
+    mycursor.execute(sql)
+    data = mycursor.fetchall()
+    mycursor.close()
+    # Consulta para obtener los años únicos asociados al cliente
+    mycursor = db.connection.cursor()
+    sql_years = "SELECT DISTINCT YEAR(fecha) AS year FROM asientoregistro WHERE clientefk = %s"
+    mycursor.execute(sql_years, (idcliente,))
+    years_data = mycursor.fetchall()
+    
+    # Obtén la lista de años desde los resultados
+    list = [year[0] for year in years_data]
 
-# def actualizar_mayor(mycursor, idcliente, añoform, plan, mdebe, mhaber):
-#     mycursor = db.connection.cursor()
-#     sql2=  """
-#             UPDATE mayor
-#             SET totaldebe = totaldebe + %s,
-#                 totalhaber = totalhaber + %s
-#             WHERE plancuentasfk = %s
-#             AND clientefk = %s
-#             AND periodo = %s;
-#             """
-#     val2 = (mdebe,mhaber,añoform,plan,idcliente)
-#     mycursor.execute(sql2, val2,)
-#     db.connection.commit()
-#     mycursor.close()
-
+    
+    
+    mycursor.close()
+    
+ 
+    print("Data from the database:", data)
+    id = session.get('idrol')
+    list = session.get('list')
+    data = session.get('data')
+    descripcion = session.get('descripcion')
+    fecha = session.get('fecha')
+    
+    return render_template('cargar_diario.html', idcliente=idcliente, data=data,list=list, id=id,fecha=fecha,descripcion=descripcion)
 
 
 
 @app.route('/registros')
 def registros():
-    idcliente = session.get('idcliente')
     
+    #idcliente = session.get('idcliente')
+    idcliente = session.get('idcliente')
     # Consulta para obtener los años únicos asociados al cliente
     mycursor = db.connection.cursor()
     sql_years = "SELECT DISTINCT YEAR(fecha) AS year FROM asientoregistro WHERE clientefk = %s"

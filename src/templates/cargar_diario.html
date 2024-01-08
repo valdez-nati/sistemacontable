@@ -37,7 +37,8 @@
     {% endif %}
 {% endwith %}
 
-<form method="post" action="/cargar_diario/" id="miFormulario" onsubmit="return confirmSubmit();">
+<form method="post" action="{{ url_for('cargar_diario') }}" id="miFormulario" onsubmit="return confirmSubmit();">
+
   <input type="hidden" name="csrf_token" id="csrf_token" value="{{csrf_token()}}">
   <div class="container">
       <div class="fila">
@@ -56,9 +57,13 @@
 
         <label for="cuentas" style="text-align: right;">Cuentas:</label>
           <select id="cuentas" name="cuentas">
-            {% for cuenta in data %}
-              <option value="{{ cuenta[0] }}">{{ cuenta[1] }} - {{ cuenta[2] }}</option>
-            {% endfor %}
+            {% if data %}
+                {% for cuenta in data %}
+                    <option value="{{ cuenta[0] }}">{{ cuenta[1] }} - {{ cuenta[2] }}</option>
+                {% endfor %}
+            {% else %}
+                <option value="">No data available</option>
+            {% endif %}
           </select>
       </div>
 

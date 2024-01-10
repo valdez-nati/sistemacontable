@@ -1,5 +1,4 @@
-import os
-from flask import Flask, render_template, request, redirect, url_for, flash,jsonify,session,Response, send_file
+from flask import Flask, render_template, request, redirect, url_for, flash,jsonify,session,Response, send_file,request
 from flask_mysqldb import MySQL
 from werkzeug.security import check_password_hash
 from config import config
@@ -8,7 +7,7 @@ from flask_wtf.csrf import CSRFProtect
 import pandas as pd
 
 from datetime import datetime
-
+import json
 import os
 import openpyxl
 from xlsxwriter import Workbook
@@ -154,8 +153,18 @@ def borrarcliente(ruc):
    
 # ---------Carga de los asientos---------------
 
+@app.route('/guardar-idcliente', methods=['GET'])
+def guardar_idcliente():
+    try:
+        idcliente = request.args.get('idcliente')
+        print("trae el id", idcliente) 
 
+        session['idcliente'] = idcliente
 
+        return 'ok'
+    except Exception as e:
+        print(f"Error: {e}")
+        return 'Error en el servidor', 500  
 
 
 
@@ -164,13 +173,12 @@ def borrarcliente(ruc):
 @login_required
 def cargar_diario():
     try:
-        mycursor = db.connection.cursor()
-        sql = "SELECT idplancuenta, codigo, descripcion FROM plancuentas WHERE imputable=1"
-        mycursor.execute(sql)
-        data = mycursor.fetchall()
-        session['data'] = data
+        fecha = request.form.get('fecha')
+        descripcion = request.form.get('descripcion')
+        
         idcliente = session.get('idcliente')
         print("cliente", idcliente)
+        mycursor = db.connection.cursor()
         último_año = "SELECT MAX(YEAR(fecha)) FROM asientoregistro WHERE clientefk=%s"
         mycursor.execute(último_año, (idcliente,))
         año_permitido = mycursor.fetchone()[0]
@@ -320,54 +328,53 @@ def cargar_diario():
             mycursor.execute(sql2, val2,)
             db.connection.commit()
             mycursor.close()
-   
+        mycursor = db.connection.cursor()
+        sql = "SELECT idplancuenta, codigo, descripcion FROM plancuentas WHERE imputable=1"
+        mycursor.execute(sql)
+        data = mycursor.fetchall()
+        session['data'] = data
                                 
-        #return render_template('cargar_diario.html',idcliente=session['idcliente'],data=data,descripcion=descripcion, numeroasiento=numeroasiento)
-        return redirect(url_for('fact'))
+        return redirect(url_for('fact',data=data, fecha=fecha, descripcion=descripcion,numeroasiento=numeroasiento))# rediret lleva el nombre de la funcion
 
      
     except Exception as e:
-        # En caso de error, puedes imprimir o manejar el error de alguna manera
+        # En caso de error, para imprimir o manejar el error de alguna manera
         print(f"Error: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
 
 
 
 
-@app.route("/cargar/")
+@app.route("/cargar")
 @login_required
 def fact():
-    idcliente = request.args.get('idcliente')
-    
-    
-    session['idcliente'] = idcliente
-    mycursor = db.connection.cursor()
-    sql = "SELECT idplancuenta, codigo,descripcion FROM plancuentas WHERE imputable=1"
-    mycursor.execute(sql)
-    data = mycursor.fetchall()
-    mycursor.close()
-    # Consulta para obtener los años únicos asociados al cliente
-    mycursor = db.connection.cursor()
-    sql_years = "SELECT DISTINCT YEAR(fecha) AS year FROM asientoregistro WHERE clientefk = %s"
-    mycursor.execute(sql_years, (idcliente,))
-    years_data = mycursor.fetchall()
-    
-    # Obtén la lista de años desde los resultados
-    list = [year[0] for year in years_data]
 
     
-    
-    mycursor.close()
-    
- 
-    print("Data from the database:", data)
+    idcliente = session.get("idcliente")
     id = session.get('idrol')
     list = session.get('list')
     data = session.get('data')
     descripcion = session.get('descripcion')
     fecha = session.get('fecha')
+    print("CLIENTE DE FACT",idcliente)
+
+    mycursor = db.connection.cursor()
+ 
+
+
+    sql = "SELECT idplancuenta, codigo, descripcion FROM plancuentas WHERE imputable=1"
+    mycursor.execute(sql)
+    data = mycursor.fetchall()
+    #print("Data from the database:", data) 
     
-    return render_template('cargar_diario.html', idcliente=idcliente, data=data,list=list, id=id,fecha=fecha,descripcion=descripcion)
+    mycursor.close()
+    
+  
+    
+ 
+   
+   
+    return render_template('cargar_diario.html',data=data, idcliente=idcliente, id=id,fecha=fecha,descripcion=descripcion)
 
 
 
@@ -607,17 +614,7 @@ def borrar_asiento(mi_registro_id, valor_4, valor_5, id_plancuenta):
         periodo = row[3]
         cliente = row[4]
         print("debe:",debe,"haber",haber,"plan:",plan,"año:",periodo,"cliente",cliente)
-        # sql2=  """
-        #     UPDATE mayor
-        #     SET totaldebe = totaldebe - %s,
-        #         totalhaber = totalhaber - %s
-        #     WHERE plancuentasfk = %s
-        #     AND clientefk = %s
-        #     AND periodo = %s;
-        #     """
-        # val2 = (debe,haber,plan,cliente,periodo)
-        # mycursor.execute(sql2, val2,)
-        # db.connection.commit()
+       
         
 
     mycursor.execute( "DELETE FROM asientoregistro WHERE idregistro = %s",(mi_registro_id,))
@@ -981,37 +978,99 @@ def balance():
 @app.route('/balance_año',methods= ['POST', 'GET'])
 def balance_año():
     idcliente = session.get('idcliente')
-    año = int(request.form.get('year'))   
+    año = str(request.form.get('year'))   
+    print("año del balance a mostrar",año,"cliente",idcliente)
     session['año'] = año 
-    mycursor = db.connection.cursor()
-    query = """
+    try:
+        mycursor = db.connection.cursor()
+        query = """
             SELECT
+            Codigo,
+            Descripcion,
+            SumasDebe,
+            SumasHaber,
+            SaldosDebe,
+            SaldosHaber,
+            ABS(Activos) ,
+            ABS(Pasivos),
+            Patrimonio
+            FROM (
+            SELECT 
                 p.codigo AS Codigo,
                 p.descripcion AS Descripcion,
-                SUM(d.debe) AS SumasDebe,
-                SUM(d.haber) AS SumasHaber,
-                CASE WHEN SUM(d.debe - d.haber) < 0 THEN 0 ELSE SUM(d.debe - d.haber) END AS SaldosDebe,
-                CASE WHEN SUM(d.haber - d.debe) < 0 THEN 0 ELSE SUM(d.haber - d.debe) END AS SaldosHaber
+                COALESCE(SUM(d.debe), 0) AS SumasDebe,
+                COALESCE(SUM(d.haber), 0) AS SumasHaber,  
+                CASE WHEN COALESCE(SUM(d.debe - d.haber), 0) < 0 THEN 0 ELSE COALESCE(SUM(d.debe - d.haber), 0) END AS SaldosDebe,
+                CASE WHEN COALESCE(SUM(d.haber - d.debe), 0) < 0 THEN 0 ELSE COALESCE(SUM(d.haber - d.debe), 0) END AS SaldosHaber,
+                CASE WHEN p.idplancuenta BETWEEN 1 AND 60 THEN COALESCE(SUM(d.debe - d.haber), 0) ELSE 0 END AS Activos,
+                CASE WHEN p.idplancuenta BETWEEN 61 AND 121 THEN COALESCE(SUM(d.haber - d.debe), 0) ELSE 0 END AS Pasivos,
+                CASE WHEN p.idplancuenta BETWEEN 122 AND 151 THEN COALESCE(SUM(d.haber - d.debe), 0) ELSE 0 END AS Patrimonio,
+
+                1 AS Orden
             FROM
-                asientodetalle d
-            JOIN
+                plancuentas p
+            LEFT JOIN 
+                asientodetalle d ON p.idplancuenta = d.plancuentasfk
+            LEFT JOIN
+                asientoregistro a ON d.asientoregistrofk = a.idregistro AND
+                                    a.clientefk = %s AND 
+                                    YEAR(a.fecha) = %s
+            GROUP BY 
+                p.codigo,
+                p.descripcion
+                            
+            UNION
+
+            SELECT
+                '' AS Codigo,
+                'Totales' AS Descripcion,
+                SUM(COALESCE(SumasDebe, 0)) AS SumasDebe,
+                SUM(COALESCE(SumasHaber, 0)) AS SumasHaber,
+                SUM(COALESCE(SaldosDebe, 0)) AS SaldosDebe, 
+                SUM(COALESCE(SaldosHaber, 0)) AS SaldosHaber,
+                SUM(COALESCE(Activos, 0)) AS Activos,
+                SUM(COALESCE(Pasivos, 0)) AS Pasivos,
+                SUM(COALESCE(Patrimonio, 0)) AS Patrimonio,
+                2 AS Orden
+            FROM (
+                SELECT
+                p.codigo AS Codigo,
+                p.descripcion AS Descripcion,
+                COALESCE(SUM(d.debe), 0) AS SumasDebe,
+                COALESCE(SUM(d.haber), 0) AS SumasHaber,
+                CASE WHEN COALESCE(SUM(d.debe - d.haber), 0) < 0 THEN 0 ELSE COALESCE(SUM(d.debe - d.haber), 0) END AS SaldosDebe,
+                CASE WHEN COALESCE(SUM(d.haber - d.debe), 0) < 0 THEN 0 ELSE COALESCE(SUM(d.haber - d.debe), 0) END AS SaldosHaber,
+                CASE WHEN p.idplancuenta BETWEEN 1 AND 60  THEN COALESCE(SUM(d.debe - d.haber), 0) ELSE 0 END AS Activos,
+                CASE WHEN p.idplancuenta BETWEEN 61 AND 121 THEN COALESCE(SUM(d.haber - d.debe), 0) ELSE 0 END AS Pasivos,
+                CASE WHEN p.idplancuenta BETWEEN 122 AND 151 THEN COALESCE(SUM(d.haber - d.debe), 0) ELSE 0 END AS Patrimonio
+                FROM
+                plancuentas p
+                LEFT JOIN
+                asientodetalle d ON p.idplancuenta = d.plancuentasfk
+                LEFT JOIN
                 asientoregistro a ON d.asientoregistrofk = a.idregistro
-            JOIN
-                plancuentas p ON d.plancuentasfk = p.idplancuenta
-            WHERE
-                a.clientefk = %s AND YEAR(a.fecha) = %s
-            GROUP BY
-                p.codigo
-            ORDER BY
-                p.codigo;
-                
-            """
-    mycursor.execute(query, (idcliente, año,))
-    registros = mycursor.fetchall()
+                WHERE a.clientefk = %s AND YEAR(a.fecha) = %s
+                GROUP BY
+                p.codigo, p.descripcion
+            ) AS DetallesTotales
+            ) AS DetallesFinal
+
+            ORDER BY Orden, Codigo;
+        """
+
+
+        print("Executing query:", query)
+        mycursor.execute(query, (idcliente, año,idcliente,año))
+
+        registros = mycursor.fetchall()
+        print("Consulta de totales", registros)
+        
+    except Exception as e:
+        print("SQL Error:", str(e))
+        return jsonify({'success': False, 'error': str(e)})
+        
     
-    print("Consulta de totales", registros)
-    
-    # Consulta para obtener los años únicos asociados al cliente
+  #  Consulta para obtener los años únicos asociados al cliente
     mycursor = db.connection.cursor()
     sql_years = "SELECT DISTINCT YEAR(fecha) AS year FROM asientoregistro WHERE clientefk = %s"
     mycursor.execute(sql_years, (idcliente,))

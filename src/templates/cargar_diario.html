@@ -43,28 +43,25 @@
   <div class="container">
       <div class="fila">
         <label for="fecha">Fecha:</label>
-        <input type="date" name="fecha" id="fecha"class="form-control cuadro-pequeno" value="{{ request.form['fecha'] }}">
+        <input type="date" name="fecha" id="fecha"class="form-control cuadro-pequeno" value="{{ request.args.get('fecha', '') }}">
         
         <label for="numeroasiento" class="label-ancho">Numero de asiento:</label>
-        <input type="number" name="numeroasiento" value="{{ numeroasiento }}" class="form-control cuadro-pequeno" disabled pattern="\d*">
+        <input type="number" name="numeroasiento" value="{{ request.args.get(numeroasiento),'' }}" class="form-control cuadro-pequeno" disabled pattern="\d*">
 
       </div>
 
 
       <div class="fila">
         <label for="descripcion">Descripción:</label>
-        <input type="text" name="descripcion" class="form-control cuadro-pequen cuadro-pequeno" value="{{ request.form['descripcion'] }}">
+        <input type="text" name="descripcion" class="form-control cuadro-pequen cuadro-pequeno" value="{{ request.args.get('descripcion', '') }}">
 
-        <label for="cuentas" style="text-align: right;">Cuentas:</label>
-          <select id="cuentas" name="cuentas">
-            {% if data %}
-                {% for cuenta in data %}
-                    <option value="{{ cuenta[0] }}">{{ cuenta[1] }} - {{ cuenta[2] }}</option>
-                {% endfor %}
-            {% else %}
-                <option value="">No data available</option>
-            {% endif %}
-          </select>
+        <label for="cuentas" style="text-align: right;">Cuenta:</label>
+        <select id="cuentas" name="cuentas">
+          {% for cuenta in data %}
+            <option value="{{ cuenta[0] }}">{{ cuenta[1] }} - {{ cuenta[2] }}</option>
+          {% endfor %}       
+            
+        </select>
       </div>
 
       <div class="fila">
@@ -96,12 +93,7 @@
 
   <a href="/balance"  class="btn btn-primary ">Balance</a>
 
-
+  {{ idcliente }}
  </div>
-<script>
-  
-  var idcliente = getParameterByName('idcliente'); 
- 
 
-</script>
 {% endblock  %}

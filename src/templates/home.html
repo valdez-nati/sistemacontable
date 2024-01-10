@@ -122,7 +122,7 @@
             {% if id == 1 %}
              <a href="/editarcliente/{{ row.5 }}" class="btn btn-secondary btn-sm" data-toggle="modal" data-target="#modaledit{{row.0}}">Editar</a>
             {% endif %}
-            <button onclick="cliente('{{ row.0 }}')" class="btn btn-secondary btn-sm"> Cargar </button>
+            <button onclick="cargarCliente('{{row.0}}')"  class="btn btn-secondary btn-sm"> Cargar </button>
           </div>
           <div  class="button-row">
             {% if id == 1 %}
@@ -214,10 +214,23 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>    
     <script>
-      function cliente(idcliente) {
+      function cargarCliente(idcliente) {
+        $.ajax({
+            url: '/guardar-idcliente?idcliente=' + idcliente,  // Agrega el idcliente como parámetro en la URL
+            method: 'GET',
+            success: function (data) {
+                console.log(data);
+                window.location.href = '/cargar';
+            }
+        });
+    }
+    
+
+
+      //function cliente(idcliente) {
           
-          window.location.href = '/cargar/?idcliente=' + idcliente;
-      }
+        //  window.location.href = '/cargar/?idcliente=' + idcliente;
+      //}
       function validarFormulario() {
         // Obtener el valor del  correo
         var correo = document.getElementById('correo').value;

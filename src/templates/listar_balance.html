@@ -86,9 +86,6 @@
       <th>Sumas</th>
       <th>Saldos</th>
       <th>Saldos</th>
-      <th>Activos</th>
-      <th>Pasivos</th>
-      <th>Patrimonio</th>
     </tr>
     <tr>
         <th></th>
@@ -112,11 +109,34 @@
       <td>{{ registro.3 }}</td> 
       <td>{{ registro.4 }}</td> 
       <td>{{ registro.5 }}</td>
-      <td>{{ registro.6 }}</td>
-      <td>{{ registro.7 }}</td> 
-      <td>{{ registro.8 }}</td>
+
     </tr>
   {%endfor%}
 </tbody>
 </table>
+<table>
+  <thead>
+    <tr>
+      <th>ACTIVOS</th>
+      <th>ACTIVOS CORRIENTES</th>
+      <th>ACTIVOS NO CORRIENTES</th>
+    </tr>
+    
+
+  </thead>
+  
+  <tbody>
+
+  {% for res in resultados %}
+  
+    <tr>
+      <td>{{ res.4 }}</td>
+      <td>{{ res.5 }}</td>
+      <td>{{ res.6 }}</td>
+     
+    </tr>
+  {%endfor%}
+</tbody>
+</table>
+
 {% endblock  %}

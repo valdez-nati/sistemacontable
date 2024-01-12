@@ -46,7 +46,7 @@
         <input type="date" name="fecha" id="fecha"class="form-control cuadro-pequeno" value="{{ request.args.get('fecha', '') }}">
         
         <label for="numeroasiento" class="label-ancho">Numero de asiento:</label>
-        <input type="number" name="numeroasiento" value="{{ request.args.get(numeroasiento),'' }}" class="form-control cuadro-pequeno" disabled pattern="\d*">
+        <input type="number" name="numeroasiento" value="{{ request.args.get('numeroasiento','') }}" class="form-control cuadro-pequeno" disabled pattern="\d*">
 
       </div>
 

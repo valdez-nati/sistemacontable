@@ -29,7 +29,7 @@
 
 
 <div style="text-align: center;">
-  <form method="post" action="/mostrar_registro">
+  <form method="post" action="{{ url_for('mostrar_registro') }}">
     <input type="hidden" name="csrf_token" id="csrf_token" value="{{csrf_token()}}">
   
 
@@ -50,7 +50,7 @@
     
 <div style="text-align: center; margin-top: 10px;">
       
-  <form method="post" action="/mes_registro">
+  <form method="post" action="{{ url_for('mes_registro') }}">
     <input type="hidden" name="csrf_token" id="csrf_token" value="{{csrf_token()}}">
   
       <h5>Seleccione un mes:</h5>
@@ -89,7 +89,7 @@
   </thead>
   
   <tbody>
-
+{% if registros is not none %}
   {% for registro in registros %}
   
     <tr>
@@ -106,7 +106,7 @@
       </td>
       <td>
         {% if id == 1 %}
-            <a href="/borrar_asiento/{{ registro.0 }}/{{ registro.4 }}/{{ registro.5 }}/{{ registro.7 }}" onclick="return confirm('¿Seguro que desea eliminar?')" class="btn btn-danger btn-sm">Eliminar</a>
+            <a href="/borrar_asiento/{{ registro.0 }}" onclick="return confirm('¿Seguro que desea eliminar?')" class="btn btn-danger btn-sm">Eliminar</a>
         {% endif %}
       </td>
     </tr>
@@ -172,7 +172,7 @@
 
   </div>
   {% endfor %}
-  
+{% endif %}
   </tbody>
 </table>
 

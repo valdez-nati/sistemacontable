@@ -42,29 +42,12 @@
   </form>
   <form method="post" action="/procesar_balance">
     <input type="hidden" name="csrf_token" value="{{csrf_token()}}">
+    <input type="hidden" name="year" value="{{ request.form.get('year') }}">
     <button type="submit" class="btn btn-success">Exportar a Excel</button>
   </form>
 </div>
 
     
-<div style="text-align: center; margin-top: 10px;">
-      
-  <form method="post" action="/mes_balance">
-    <input type="hidden" name="csrf_token" id="csrf_token" value="{{csrf_token()}}">
-  
-      <h5>Seleccione un mes:</h5>
-      <select name="month" class="form-select">
-          {% for month in lista %}
-              <option value="{{ month }}" {% if month == request.args.get('lista') %}selected{% endif %}>{{ month }}</option>
-          {% endfor %}
-      </select>
-      <button type="submit">Mostrar </button>
-  </form>  
-  <form method="post" action="/exportar_excel">
-    <input type="hidden" name="csrf_token" value="{{csrf_token()}}">
-    <button type="submit" class="btn btn-success">Exportar a Excel</button>
-  </form>
-</div>
 
 
 {% with messages = get_flashed_messages() %}
@@ -82,61 +65,23 @@
     <tr>
       <th>Codigo</th>
       <th>Descripción</th>
-      <th>Sumas</th>
-      <th>Sumas</th>
-      <th>Saldos</th>
-      <th>Saldos</th>
-    </tr>
-    <tr>
-        <th></th>
-        <th></th>
-        <th>Debe</th>
-        <th>Haber</th>
-        <th>Debe</th>
-        <th>Haber</th>
+      <th>Monto</th>
     </tr>
 
   </thead>
   
   <tbody>
 
-  {% for registro in registros %}
+  {% for registro in resultados %}
   
     <tr>
       <td>{{ registro.0 }}</td>
       <td>{{ registro.1 }}</td>
-      <td>{{ registro.2 }}</td>
-      <td>{{ registro.3 }}</td> 
-      <td>{{ registro.4 }}</td> 
-      <td>{{ registro.5 }}</td>
-
-    </tr>
-  {%endfor%}
-</tbody>
-</table>
-<table>
-  <thead>
-    <tr>
-      <th>ACTIVOS</th>
-      <th>ACTIVOS CORRIENTES</th>
-      <th>ACTIVOS NO CORRIENTES</th>
-    </tr>
+      <td>{{ registro.2 }}</td> 
     
 
-  </thead>
-  
-  <tbody>
-
-  {% for res in resultados %}
-  
-    <tr>
-      <td>{{ res.4 }}</td>
-      <td>{{ res.5 }}</td>
-      <td>{{ res.6 }}</td>
-     
     </tr>
   {%endfor%}
 </tbody>
-</table>
 
 {% endblock  %}

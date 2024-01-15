@@ -1,10 +1,12 @@
-from flask import Flask, render_template, request, redirect, url_for, flash,jsonify,session,Response, send_file,request
+
+from flask import Flask, render_template, request, redirect, url_for, flash,jsonify,session,make_response, send_file,request
 from flask_mysqldb import MySQL
 from werkzeug.security import check_password_hash
 from config import config
 from flask_login import LoginManager, current_user, login_user, logout_user, login_required
 from flask_wtf.csrf import CSRFProtect
 import pandas as pd
+from openpyxl.styles import Alignment
 
 from datetime import datetime
 import json
@@ -379,51 +381,75 @@ def fact():
     return render_template('cargar_diario.html',data=data, idcliente=idcliente, id=id,fecha=fecha,descripcion=descripcion,numeroasiento=numeroasiento)
 
 
-
+#REGISTRO DIARIO
 
 @app.route('/mostrar_registro',methods= ['POST', 'GET'])
 @login_required
 def mostrar_registro():
-    idcliente = session.get('idcliente')
-    año = int(request.form.get('year'))   
-    print("cliente",idcliente,"año",año)
-    session['año'] = año 
-    mycursor = db.connection.cursor()
-    query = """
-           SELECT 
-                ar.idregistro AS idregistro,
-                ar.fecha AS fecha,
-                ar.numeroasiento AS numeroasiento,
-                pc.descripcion AS descripcion,
-                ad.debe AS debe,
-                ad.haber AS haber,
-                ad.idetalle AS idetalle,
-                pc.idplancuenta AS idplancuenta
-            FROM 
-                asientodetalle ad
-            JOIN 
-                asientoregistro ar ON ad.asientoregistrofk = ar.idregistro
-            JOIN 
-                plancuentas pc ON ad.plancuentasfk = pc.idplancuenta
-            WHERE 
-                ar.clientefk = %s
-                AND YEAR(ar.fecha) = %s;
+    if request.method == 'POST':
+        idcliente = session.get('idcliente')
+        año = int(request.form.get('year'))   
+        print("cliente",idcliente,"año",año)
+        session['año'] = año 
+        mycursor = db.connection.cursor()
+        query = """
+            SELECT 
+                    ar.idregistro AS idregistro,
+                    ar.fecha AS fecha,
+                    ar.numeroasiento AS numeroasiento,
+                    pc.descripcion AS descripcion,
+                    ad.debe AS debe,
+                    ad.haber AS haber,
+                    ad.idetalle AS idetalle,
+                    pc.idplancuenta AS idplancuenta
+                FROM 
+                    asientodetalle ad
+                JOIN 
+                    asientoregistro ar ON ad.asientoregistrofk = ar.idregistro
+                JOIN 
+                    plancuentas pc ON ad.plancuentasfk = pc.idplancuenta
+                WHERE 
+                    ar.clientefk = %s
+                    AND YEAR(ar.fecha) = %s;
 
-                
-            """
-    mycursor.execute(query, (idcliente, año,))
-    registros = mycursor.fetchall()
-    if session.get('registros') is None:
-        session['registros'] = []
+                    
+                """
+        mycursor.execute(query, (idcliente, año,))
+        registros = mycursor.fetchall()
+        
+        print("Consulta de totales", registros)
+        session['registros'] = registros
+           
+        # Consulta para obtener los años únicos asociados al cliente
+        mycursor = db.connection.cursor()
+        sql_years = "SELECT DISTINCT YEAR(fecha) AS year FROM asientoregistro WHERE clientefk = %s"
+        mycursor.execute(sql_years, (idcliente,))
+        years_data = mycursor.fetchall()
+        
+        # Obtén la lista de años desde los resultados
+        lis =  [year[0] for year in years_data]
+        
+        
+    
+        print("resultado de la vista",registros)
+        mycursor.close()
 
-    print("Consulta de totales", registros)
-    session['registros'] = registros
- 
+        mycursor = db.connection.cursor()
+        sql_month = "SELECT DISTINCT fecha FROM asientoregistro WHERE clientefk = %s"
+        mycursor.execute(sql_month, (idcliente,))
+        month_data = mycursor.fetchall()
+
+        mycursor.close()
+        unico = set(me[0].strftime('%Y-%m') for me in month_data)
+        lista = list(unico)
+        idrol = session.get('idrol')
+        id=idrol
+
    
 
 
-    return redirect(url_for('registros', registros=registros))
-    #return render_template('listar_registro.html', registros=registros, lis=lis, data=data,id=id,lista=lista)
+    #return redirect(url_for('registros', registros=registros))
+    return render_template('listar_registro.html', registros=registros, lis=lis,id=id,lista=lista)
 
 
 
@@ -434,8 +460,7 @@ def registros():
     #idcliente = session.get('idcliente')
     idcliente = session.get('idcliente')
     
-    registros = session.get('registros')
-
+    
     # Consulta para obtener los años únicos asociados al cliente
     mycursor = db.connection.cursor()
     sql_years = "SELECT DISTINCT YEAR(fecha) AS year FROM asientoregistro WHERE clientefk = %s"
@@ -461,54 +486,83 @@ def registros():
     idrol = session.get('idrol')
     id=idrol
 
-    return render_template('listar_registro.html', lis=lis, lista=lista, id=id,registros=registros)
+    return render_template('listar_registro.html', lis=lis, lista=lista, id=id)
 
 @app.route('/mes_registro',methods= ['POST', 'GET'])
 @login_required
 def mes_registro():
-    idcliente = session.get('idcliente')
-    mes = request.form.get('month') 
-    session['mes'] = mes 
-    print("mes:",mes)
-    mycursor = db.connection.cursor()
-    fecha = datetime.strptime(mes, "%Y-%m")
-    m = str(fecha.strftime("%m"))
-    y= fecha.year
-    print("m:",m,"y:",y)
-    query = """
-        SELECT 
-            ar.idregistro AS idregistro,
-            ar.fecha AS fecha,
-            ar.numeroasiento AS numeroasiento,
-            pc.descripcion AS descripcion,
-            ad.debe AS debe,
-            ad.haber AS haber,
-            ad.idetalle AS idetalle,
-            pc.idplancuenta AS idplancuenta
-        FROM 
-            asientodetalle ad
-        JOIN 
-            asientoregistro ar ON ad.asientoregistrofk = ar.idregistro
-        JOIN 
-            plancuentas pc ON ad.plancuentasfk = pc.idplancuenta
-        WHERE 
-            ar.clientefk = %s
-            AND MONTH(ar.fecha)=%s
-            AND YEAR(ar.fecha) = %s;
-        """
+    if request.method == 'POST':
+        idcliente = session.get('idcliente')
+        mes = request.form.get('month') 
+        session['mes'] = mes 
+        print("mes:",mes)
+        mycursor = db.connection.cursor()
+        fecha = datetime.strptime(mes, "%Y-%m")
+        m = str(fecha.strftime("%m"))
+        y= fecha.year
+        print("m:",m,"y:",y)
+        query = """
+            SELECT 
+                ar.idregistro AS idregistro,
+                ar.fecha AS fecha,
+                ar.numeroasiento AS numeroasiento,
+                pc.descripcion AS descripcion,
+                ad.debe AS debe,
+                ad.haber AS haber,
+                ad.idetalle AS idetalle,
+                pc.idplancuenta AS idplancuenta
+            FROM 
+                asientodetalle ad
+            JOIN 
+                asientoregistro ar ON ad.asientoregistrofk = ar.idregistro
+            JOIN 
+                plancuentas pc ON ad.plancuentasfk = pc.idplancuenta
+            WHERE 
+                ar.clientefk = %s
+                AND MONTH(ar.fecha)=%s
+                AND YEAR(ar.fecha) = %s;
+            """
 
+        
+        mycursor.execute(query, (idcliente,m, y,))
+        registros = mycursor.fetchall()
+        if session.get('registros') is None:
+            session['registros'] = []
+
+        print("Consulta de totales", registros)
     
-    mycursor.execute(query, (idcliente,m, y,))
-    registros = mycursor.fetchall()
-    if session.get('registros') is None:
-        session['registros'] = []
-
-    print("Consulta de totales", registros)
+        # Consulta para obtener los años únicos asociados al cliente
+        mycursor = db.connection.cursor()
+        sql_years = "SELECT DISTINCT YEAR(fecha) AS year FROM asientoregistro WHERE clientefk = %s"
+        mycursor.execute(sql_years, (idcliente,))
+        years_data = mycursor.fetchall()
+        
+        # Obtén la lista de años desde los resultados
+        lis =  [year[0] for year in years_data]
+        
+        
     
+        print("resultado de la vista",registros)
+        mycursor.close()
+
+        mycursor = db.connection.cursor()
+        sql_month = "SELECT DISTINCT fecha FROM asientoregistro WHERE clientefk = %s"
+        mycursor.execute(sql_month, (idcliente,))
+        month_data = mycursor.fetchall()
+
+        mycursor.close()
+        unico = set(me[0].strftime('%Y-%m') for me in month_data)
+        lista = list(unico)
+        idrol = session.get('idrol')
+        id=idrol
+
+   
 
 
-    return redirect(url_for('registros', registros=registros))
-   # return render_template('listar_registro.html',registros=registros,  lis=lis, data=data,id=id,lista=lista)
+    #return redirect(url_for('registros', registros=registros))
+    return render_template('listar_registro.html', registros=registros, lis=lis,id=id,lista=lista)
+
+
 
 @app.route("/editar_registro",methods= ['POST', 'GET'])# tiene que llamarse igual la funcion y la url/
 @login_required
@@ -725,6 +779,7 @@ def diario_excel():
             WHERE 
                 ar.clientefk = %s
                 AND YEAR(ar.fecha) = %s;
+                
 
     """
 
@@ -761,7 +816,7 @@ def diario_excel():
     return send_file(ruta_archivo, as_attachment=True)
             
 
-
+#MAYOR
 
 @app.route('/mayor')
 def mayor():
@@ -795,60 +850,64 @@ def mayor():
 
 @app.route('/mes_mayor',methods= ['POST', 'GET'])
 def mes_mayor():
-    idcliente = session.get('idcliente')
-    cuentas = request.form.get("cuentas")
-    año = request.form.get("year")
-    año = session.get('año')
-    mycursor = db.connection.cursor()
-    
-    query = """
-        SELECT ar.fecha AS fecha, 
-            pc.descripcion AS cuentas,
-            ar.numeroasiento AS numeroasiento, 
-            ar.descripcion AS descripcion,
-            ad.debe AS debe, ad.haber AS haber, 
-            CASE WHEN ad.debe - ad.haber < 0 THEN 0 ELSE ad.debe - ad.haber END AS saldo 
-        FROM asientodetalle ad 
-        JOIN asientoregistro ar ON ad.asientoregistrofk = ar.idregistro 
-        JOIN plancuentas pc ON ad.plancuentasfk = pc.idplancuenta 
-        WHERE ar.clientefk = %s AND pc.idplancuenta =%s  AND YEAR(ar.fecha) =%s
-        ORDER BY  pc.idplancuenta;
-        """
+    if request.method == 'POST':
+        idcliente = session.get('idcliente')
+        cuentas = request.form.get("cuentas")
+        año = request.form.get("year")
+        año = session.get('año')
+        mycursor = db.connection.cursor()
+        
+        query = """
+            SELECT ar.fecha AS fecha, 
+                pc.descripcion AS cuentas,
+                ar.numeroasiento AS numeroasiento, 
+                ar.descripcion AS descripcion,
+                ad.debe AS debe, ad.haber AS haber, 
+                CASE WHEN ad.debe - ad.haber < 0 THEN 0 ELSE ad.debe - ad.haber END AS saldo 
+            FROM asientodetalle ad 
+            JOIN asientoregistro ar ON ad.asientoregistrofk = ar.idregistro 
+            JOIN plancuentas pc ON ad.plancuentasfk = pc.idplancuenta 
+            WHERE ar.clientefk = %s AND pc.idplancuenta =%s  AND YEAR(ar.fecha) =%s
+            ORDER BY  pc.idplancuenta;
+            """
 
-    
-    mycursor.execute(query, (idcliente,cuentas, año,))
-    libros = mycursor.fetchall()
-    print("Consulta de totales", libros)
-    
+        
+        mycursor.execute(query, (idcliente,cuentas, año,))
+        libros = mycursor.fetchall()
+        print("Consulta de totales", libros)
+        
 
-    # Consulta para obtener los años únicos asociados al cliente
-    mycursor = db.connection.cursor()
-    sql_years = "SELECT DISTINCT YEAR(fecha) AS year FROM asientoregistro WHERE clientefk = %s"
-    mycursor.execute(sql_years, (idcliente,))
-    years_data = mycursor.fetchall()
-    
-    # Obtén la lista de años desde los resultados
-    lis =  [year[0] for year in years_data]
-    
-    
-    
-    mycursor.close()
+        # Consulta para obtener los años únicos asociados al cliente
+        mycursor = db.connection.cursor()
+        sql_years = "SELECT DISTINCT YEAR(fecha) AS year FROM asientoregistro WHERE clientefk = %s"
+        mycursor.execute(sql_years, (idcliente,))
+        years_data = mycursor.fetchall()
+        
+        # Obtén la lista de años desde los resultados
+        lis =  [year[0] for year in years_data]
+        
+        
+        
+        mycursor.close()
 
 
-    
-    
-    idrol = session.get('idrol')
-    id=idrol
-       
-    mycursor = db.connection.cursor()
-    sql = "SELECT idplancuenta, codigo, descripcion FROM plancuentas WHERE imputable=1"
-    mycursor.execute(sql)
-    data = mycursor.fetchall()
-       
-    
-    mycursor.close()
-    
-    return render_template('mayor.html',libros=libros,  lis=lis, id=id,data=data)
+        
+        
+        idrol = session.get('idrol')
+        id=idrol
+        
+        mycursor = db.connection.cursor()
+        sql = "SELECT idplancuenta, codigo, descripcion FROM plancuentas WHERE imputable=1"
+        mycursor.execute(sql)
+        data = mycursor.fetchall()
+        
+        
+        mycursor.close()
+        response = make_response(render_template('mayor.html', lis=lis, data=data, id=id))
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        return render_template('mayor.html',libros=libros,  lis=lis, id=id,data=data)
 
 
 
@@ -935,6 +994,7 @@ def mayor_excel():
 
 @app.route('/balance')
 def balance():
+    
     idcliente = session.get('idcliente')
     
     # Consulta para obtener los años únicos asociados al cliente
@@ -961,18 +1021,235 @@ def balance():
     return render_template('listar_balance.html', lis=lis, lista=lista)
 
 
-@app.route('/balance_año',methods= ['POST', 'GET'])
+
+@app.route('/balance_año', methods=['POST', 'GET'])
 def balance_año():
-    idcliente = session.get('idcliente')
-    año = str(request.form.get('year'))   
-    print("año del balance a mostrar",año,"cliente",idcliente)
-    session['año'] = año 
-    try:
-        mycursor = db.connection.cursor()
-        query = """
+    if request.method == 'POST':
+        idcliente = session.get('idcliente')
+        año = str(request.form.get('year'))
+        print("año del balance a mostrar", año, "cliente", idcliente)
+        session['año'] = año
+        try:
+            mycursor = db.connection.cursor()
+            sql = """
+               WITH CuentasConSaldos AS (
+                SELECT 
+                    pc.idplancuenta AS id_cuenta, 
+                    pc.codigo AS codigo_cuenta,
+                    pc.descripcion AS descripcion_cuenta,
+                    COALESCE(SUM(ad.debe - ad.haber), 0) AS saldo_cuenta
+                FROM plancuentas pc
+                LEFT JOIN asientodetalle ad ON pc.idplancuenta = ad.plancuentasfk
+                LEFT JOIN asientoregistro a ON ad.asientoregistrofk = a.idregistro
+                LEFT JOIN clientes c ON a.clientefk = c.idcliente
+                WHERE c.idcliente = %s
+                GROUP BY pc.idplancuenta, pc.codigo, pc.descripcion  
+            )
+
+            -- Cuentas con código '1'
+            SELECT
+                '1' AS codigo_padre,
+                'ACTIVO' AS descripcion_padre,
+                COALESCE(SUM(ccs.saldo_cuenta), 0) AS saldo_total
+            FROM plancuentas pc
+            LEFT JOIN CuentasConSaldos ccs ON pc.idplancuenta = ccs.id_cuenta
+            WHERE LEFT(pc.codigo, 2) = '1.'
+
+            UNION ALL
+
+            SELECT
+                pc_padre.codigo AS codigo_padre,
+                pc_padre.descripcion AS descripcion_padre,
+                COALESCE(SUM(ccs.saldo_cuenta), 0) AS saldo_total
+            FROM plancuentas pc_padre
+            LEFT JOIN CuentasConSaldos ccs ON pc_padre.idplancuenta = ccs.id_cuenta
+            WHERE LEFT(pc_padre.codigo, 2) = '1.'
+            GROUP BY pc_padre.codigo, pc_padre.descripcion
+
+            UNION ALL
+
+            -- Cuentas con código '2'
+            SELECT
+                '2' AS codigo_padre,
+                'PASIVO' AS descripcion_padre,
+                COALESCE(SUM(ccs.saldo_cuenta), 0) AS saldo_total
+            FROM plancuentas pc
+            LEFT JOIN CuentasConSaldos ccs ON pc.idplancuenta = ccs.id_cuenta
+            WHERE LEFT(pc.codigo, 2) = '2.'
+
+            UNION ALL
+
+            SELECT
+                pc_padre.codigo AS codigo_padre,
+                pc_padre.descripcion AS descripcion_padre,
+                COALESCE(SUM(ccs.saldo_cuenta), 0) AS saldo_total
+            FROM plancuentas pc_padre
+            LEFT JOIN CuentasConSaldos ccs ON pc_padre.idplancuenta = ccs.id_cuenta
+            WHERE LEFT(pc_padre.codigo, 2) = '2.'
+            GROUP BY pc_padre.codigo, pc_padre.descripcion
+            ORDER BY codigo_padre;
+
+                    
+                    """
+            
+            mycursor.execute(sql, (idcliente))
+            resultados = mycursor.fetchall()
+            print("consulta:", resultados)
            
 
-SELECT
+
+            # Consulta para obtener los años únicos asociados al cliente
+            mycursor = db.connection.cursor()
+            sql_years = "SELECT DISTINCT YEAR(fecha) AS year FROM asientoregistro WHERE clientefk = %s"
+            mycursor.execute(sql_years, (idcliente,))
+            years_data = mycursor.fetchall()
+
+            # Obtén la lista de años desde los resultados
+            lis = [year[0] for year in years_data]
+
+            mycursor.close()
+
+            mycursor = db.connection.cursor()
+            sql_c = "SELECT idplancuenta, descripcion FROM plancuentas WHERE imputable=1"
+            mycursor.execute(sql_c)
+            data = mycursor.fetchall()
+            mycursor.close()
+
+            return render_template('listar_balance.html', lis=lis, data=data, resultados=resultados)
+
+        except Exception as e:
+            print("SQL Error:", str(e))
+            return jsonify({'success': False, 'error': str(e)})
+
+
+
+
+# @app.route('/balance_año',methods= ['POST', 'GET'])
+# def balance_año():
+#     idcliente = session.get('idcliente')
+#     año = str(request.form.get('year'))   
+#     print("año del balance a mostrar",año,"cliente",idcliente)
+#     session['año'] = año 
+#     try:
+#         mycursor = db.connection.cursor()
+#         sql="""
+#             WITH CuentasConSaldos AS (
+#                 SELECT pc.idplancuenta AS id_cuenta, 
+#                     pc.codigo AS codigo_cuenta,
+#                     pc.descripcion AS descripcion_cuenta,
+#                     COALESCE(SUM(ad.debe - ad.haber), 0) AS saldo_cuenta
+#                 FROM plancuentas pc
+#                 LEFT JOIN asientodetalle ad ON pc.idplancuenta = ad.plancuentasfk
+#                 LEFT JOIN asientoregistro a ON ad.asientoregistrofk = a.idregistro
+#                 LEFT JOIN clientes c ON a.clientefk = c.idcliente
+#                 WHERE c.idcliente = %s
+#                 GROUP BY pc.idplancuenta, pc.codigo, pc.descripcion  
+#             )
+
+#             SELECT
+#                 '1' AS codigo_padre,
+#                 'ACTIVO' AS descripcion_padre,
+#                 COALESCE(totals.total_saldos, 0) AS saldo_total
+#             FROM plancuentas pc
+#             LEFT JOIN
+#             (
+#                 SELECT SUM(saldo_cuenta) AS total_saldos
+#                 FROM CuentasConSaldos
+#                 WHERE codigo_cuenta LIKE '1.%'
+#             ) totals ON 1=1
+#             WHERE pc.codigo = '1'  
+
+#             UNION ALL
+
+#             SELECT
+#                 pc_padre.codigo AS codigo_padre,
+#                 pc_padre.descripcion AS descripcion_padre,
+#                 COALESCE(saldos.saldo_total, 0) AS saldo_total
+#             FROM plancuentas pc_padre
+#             LEFT JOIN 
+#                 (
+#                 SELECT id_cuenta, SUM(saldo_cuenta) AS saldo_total
+#                 FROM CuentasConSaldos
+#                 WHERE codigo_cuenta LIKE '1.%'
+#                 GROUP BY id_cuenta
+#                 ) saldos ON pc_padre.idplancuenta = saldos.id_cuenta
+#             WHERE pc_padre.codigo LIKE '1.%' AND idcliente = %s
+#             ORDER BY codigo_padre; 
+        
+
+
+#         """
+#         try:
+#             mycursor.execute(sql, (idcliente,idcliente,))
+#             resultados = mycursor.fetchall()
+#             print("consulta:",resultados)
+#         except Exception as e:
+#                 print("SQL Error:", str(e))
+#                 return jsonify({'success': False, 'error': str(e)})
+#     #  Consulta para obtener los años únicos asociados al cliente
+#         mycursor = db.connection.cursor()
+#         sql_years = "SELECT DISTINCT YEAR(fecha) AS year FROM asientoregistro WHERE clientefk = %s"
+#         mycursor.execute(sql_years, (idcliente,))
+#         years_data = mycursor.fetchall()
+        
+#         # Obtén la lista de años desde los resultados
+#         lis =  [year[0] for year in years_data]
+        
+        
+        
+#         mycursor.close()
+
+#         # mycursor = db.connection.cursor()
+#         # sql_month = "SELECT DISTINCT fecha FROM asientoregistro WHERE clientefk = %s"
+#         # mycursor.execute(sql_month, (idcliente,))
+#         # month_data = mycursor.fetchall()
+
+#         # mycursor.close()
+#         # unico = set(me[0].strftime('%Y-%m') for me in month_data)
+#         # lista = list(unico)
+        
+        
+#         mycursor = db.connection.cursor()
+#         sql_c = "SELECT idplancuenta, descripcion FROM plancuentas WHERE imputable=1"
+#         mycursor.execute(sql_c)
+#         data = mycursor.fetchall()
+#         mycursor.close()
+    
+    
+        
+#         return render_template('listar_balance.html', lis=lis, data=data,resultados=resultados)
+
+
+
+#     except Exception as e:
+#                 print("SQL Error:", str(e))
+#                 return jsonify({'success': False, 'error': str(e)})
+
+
+
+@app.route('/procesar_balance',methods= ['POST', 'GET'])
+@login_required
+def exportar_balance():
+    try:
+        idcliente = session.get('idcliente')
+        mycursor_cliente = db.connection.cursor()
+        sql_cliente = "SELECT nombres, apellidos, razonsocial FROM clientes WHERE idcliente = %s"
+        mycursor_cliente.execute(sql_cliente, (idcliente,))
+        resultado_cliente = mycursor_cliente.fetchone()
+
+        if resultado_cliente:
+            nombres, apellidos, razonsocial = resultado_cliente
+            nombre_cliente = f"{nombres} {apellidos}" if nombres or apellidos else razonsocial
+        else:
+            nombre_cliente = "Cliente Desconocido"
+
+        año = str(request.form.get('year'))
+        print("año ", año)
+        fecha_hora_actual = datetime.now().strftime("%Y%m%d%H%M%S")
+
+        mycursor = db.connection.cursor()
+        sql = """
+           SELECT
             Codigo,
             Descripcion,
             SumasDebe,
@@ -987,8 +1264,6 @@ SELECT
                 COALESCE(SUM(d.haber), 0) AS SumasHaber,  
                 CASE WHEN COALESCE(SUM(d.debe - d.haber), 0) < 0 THEN 0 ELSE COALESCE(SUM(d.debe - d.haber), 0) END AS SaldosDebe,
                 CASE WHEN COALESCE(SUM(d.haber - d.debe), 0) < 0 THEN 0 ELSE COALESCE(SUM(d.haber - d.debe), 0) END AS SaldosHaber,
-                
-
                 1 AS Orden
             FROM
                 plancuentas p
@@ -1035,140 +1310,8 @@ SELECT
             ) AS DetallesFinal
 
             ORDER BY Orden, Codigo;
-        """
-
-
-        print("Executing query:", query)
-        mycursor.execute(query, (idcliente, año,idcliente,año))
-
-        registros = mycursor.fetchall()
-        print("Consulta de totales", registros)
-        
-        cuentas="""
-           SELECT
-            SUM(COALESCE(SumasDebe, 0)) AS SumasDebe,
-            SUM(COALESCE(SumasHaber, 0)) AS SumasHaber,
-            SUM(COALESCE(SaldosDebe, 0)) AS SaldosDebe, 
-            SUM(COALESCE(SaldosHaber, 0)) AS SaldosHaber,
-            SUM(ABS(COALESCE(Activos, 0))) AS Activos,
-            SUM(ABS(COALESCE(ACTIVOSCORRIENTES, 0))) AS ACTIVOSCORRIENTES,
-            SUM(COALESCE(ACTIVOSNOCORRIENTES, 0)) AS ACTIVOSNOCORRIENTES
-        FROM (
-            SELECT
-                COALESCE(SUM(d.debe), 0) AS SumasDebe,
-                COALESCE(SUM(d.haber), 0) AS SumasHaber,
-                CASE WHEN COALESCE(SUM(d.debe - d.haber), 0) < 0 THEN 0 ELSE COALESCE(SUM(d.debe - d.haber), 0) END AS SaldosDebe,
-                CASE WHEN COALESCE(SUM(d.haber - d.debe), 0) < 0 THEN 0 ELSE COALESCE(SUM(d.haber - d.debe), 0) END AS SaldosHaber,
-                CASE WHEN p.idplancuenta BETWEEN 1 AND 99 THEN COALESCE(SUM(d.debe - d.haber), 0) ELSE 0 END AS Activos,
-                CASE WHEN p.idplancuenta BETWEEN 1 AND 51 THEN COALESCE(SUM(d.haber - d.debe), 0) ELSE 0 END AS ACTIVOSCORRIENTES,
-                CASE WHEN p.idplancuenta BETWEEN 52 AND 99 THEN COALESCE(SUM(d.haber - d.debe), 0) ELSE 0 END AS ACTIVOSNOCORRIENTES
-            FROM
-                plancuentas p
-            LEFT JOIN 
-                asientodetalle d ON p.idplancuenta = d.plancuentasfk
-            LEFT JOIN
-                asientoregistro a ON d.asientoregistrofk = a.idregistro AND
-                                    a.clientefk = %s AND 
-                                    YEAR(a.fecha) =%s
-            GROUP BY 
-                p.codigo,
-                p.descripcion
-        ) AS DetallesTotales;
-
-        """
-        mycursor.execute(cuentas, (idcliente, año))
-        resultados=mycursor.fetchall()
-        print("Consulta de cuentas", resultados)
-    except Exception as e:
-        print("SQL Error:", str(e))
-        return jsonify({'success': False, 'error': str(e)})
-        
-    
-  #  Consulta para obtener los años únicos asociados al cliente
-    mycursor = db.connection.cursor()
-    sql_years = "SELECT DISTINCT YEAR(fecha) AS year FROM asientoregistro WHERE clientefk = %s"
-    mycursor.execute(sql_years, (idcliente,))
-    years_data = mycursor.fetchall()
-    
-    # Obtén la lista de años desde los resultados
-    lis =  [year[0] for year in years_data]
-    
-    
-    
-    mycursor.close()
-
-    mycursor = db.connection.cursor()
-    sql_month = "SELECT DISTINCT fecha FROM asientoregistro WHERE clientefk = %s"
-    mycursor.execute(sql_month, (idcliente,))
-    month_data = mycursor.fetchall()
-
-    mycursor.close()
-    unico = set(me[0].strftime('%Y-%m') for me in month_data)
-    lista = list(unico)
-    
-    
-    mycursor = db.connection.cursor()
-    sql = "SELECT idplancuenta, descripcion FROM plancuentas WHERE imputable=1"
-    mycursor.execute(sql)
-    data = mycursor.fetchall()
-    mycursor.close()
-    idrol = session.get('idrol')
-    id=idrol
-    
-    return render_template('listar_balance.html', registros=registros, lis=lis, data=data,id=id,lista=lista,resultados=resultados)
-
-
-
-
-@app.route('/procesar_balance',methods= ['POST', 'GET'])
-@login_required
-def exportar_balance():
-    try:
-        idcliente = session.get('idcliente')
-        mycursor_cliente = db.connection.cursor()
-        sql_cliente = "SELECT nombres, apellidos, razonsocial FROM clientes WHERE idcliente = %s"
-        mycursor_cliente.execute(sql_cliente, (idcliente,))
-        resultado_cliente = mycursor_cliente.fetchone()
-        
-        if resultado_cliente:
-            # Verificar si nombres y apellidos están vacíos y usar razonsocial en su lugar
-            nombres = resultado_cliente[0] if resultado_cliente[0] else ""
-            apellidos = resultado_cliente[1] if resultado_cliente[1] else ""
-            razonsocial = resultado_cliente[2] if resultado_cliente[2] else ""
-            
-            # Unir nombres y apellidos (si están presentes) o usar razonsocial
-            nombre_cliente = f"{nombres} {apellidos}" if nombres or apellidos else razonsocial
-        else:
-            # Manejar el caso en el que no se encuentre el cliente
-            nombre_cliente = "Cliente Desconocido"
-        año = int(request.form.get('año'))      
-        fecha_hora_actual = datetime.now().strftime("%Y%m%d%H%M%S")
-        
-  
-        mycursor = db.connection.cursor()
-        sql = """
-           SELECT
-            p.codigo AS Codigo,
-            p.descripcion AS Descripcion,
-            SUM(d.debe) AS SumasDebe,
-            SUM(d.haber) AS SumasHaber,
-            CASE WHEN SUM(d.debe - d.haber) < 0 THEN 0 ELSE SUM(d.debe - d.haber) END AS SaldosDebe,
-            CASE WHEN SUM(d.haber - d.debe) < 0 THEN 0 ELSE SUM(d.haber - d.debe) END AS SaldosHaber
-            FROM
-                asientodetalle d
-            JOIN
-                asientoregistro a ON d.asientoregistrofk = a.idregistro
-            JOIN
-                plancuentas p ON d.plancuentasfk = p.idplancuenta
-            WHERE
-                a.clientefk = %s AND YEAR(a.fecha) = %s
-            GROUP BY
-                p.codigo
-            ORDER BY
-                p.codigo;
-
             """
-        mycursor.execute(sql, (idcliente,año, ))
+        mycursor.execute(sql, (idcliente, año, idcliente, año))
         # Ejecutar y obtener resultados
         resultados = mycursor.fetchall() 
         print(resultados)
@@ -1181,38 +1324,39 @@ def exportar_balance():
         df = df[['Codigo', 'Descripcion', 'SumasDebe', 'SumasHaber', 'SaldosDebe', 'SaldosHaber']]
 
        
-          # Crear un libro de Excel y una hoja de cálculo
+        # Crear un libro de Excel y una hoja de cálculo
         wb = openpyxl.Workbook()
         ws = wb.active
 
         # Agregar un título general
-        #ws['A1'] = f"Reporte Cliente: {nombre_cliente}, Año: {año}"
+        ws['A1'] = f"Reporte Cliente: {nombre_cliente}, Año: {año}"
+        ws['A1'].font = openpyxl.styles.Font(bold=True)
+        # Títulos en dos filas
+        ws.append(["Código", "Descripción"])  
+        ws.append([None, None, "Sumas", "Sumas", "Saldos", None])
+        ws.append([None, None, "Debe", "Haber", "Debe", "Haber"])
 
-        # Agregar títulos a las columnas en dos filas
-        titles_row1 = ['Código', 'Descripción', 'Sumas', 'Sumas', 'Saldos', 'Saldos']
-        titles_row2 = ['', '', 'Debe', 'Haber', 'Debe', 'Haber']
+                # Unir celdas desde fila 1
+        ws.merge_cells(start_row=1, start_column=3, end_row=1, end_column=4)
 
-        for col_num, title in enumerate(titles_row1, 1):
-            ws.cell(row=2, column=col_num, value=title)
+        # Centrar texto en fila 1
+        ws.cell(row=1, column=3).alignment = Alignment(horizontal="center") 
 
-        for col_num, title in enumerate(titles_row2, 1):
-            ws.cell(row=3, column=col_num, value=title)
+        # Ajustar ancho de columna del nombre  
+        ws.column_dimensions['A'].auto_size = True
+        # Estilo de celda para centrar texto
+        align_center = Alignment(horizontal="center")
 
-        # Escribir el DataFrame en la hoja de cálculo
-        for r_idx, row in enumerate(df.iterrows(), start=4):
-            for c_idx, value in enumerate(row[1], start=1):
-                ws.cell(row=r_idx, column=c_idx, value=value)
-        
-        
-        total_row = df[['SumasDebe', 'SumasHaber', 'SaldosDebe', 'SaldosHaber']].sum()
+        # Aplicar estilos a las celdas
+        for row in ws.iter_rows(min_row=1, max_row=2, min_col=1, max_col=6):
+            for cell in row:
+                cell.font = openpyxl.styles.Font(bold=True)
+                cell.alignment = align_center
 
-# Obtener la última fila para determinar la posición donde agregar las sumas
-        last_row = ws.max_row + 1
+        # Escribir DataFrame
+        for row in df.itertuples(index=False):
+            ws.append(list(row))
 
-        # Escribir los totales en la hoja de cálculo justo debajo de las columnas correspondientes
-        for col_num, total_value in enumerate(total_row, start=1):
-            ws.cell(row=last_row, column=col_num, value=total_value)
-     
         # Guardar el archivo Excel
         carpeta_destino = 'C:/Users/Naty/OneDrive/Documentos'
         nombre_archivo = f'reporte_cliente_{nombre_cliente}_anio_{año}_{fecha_hora_actual}.xlsx'
@@ -1222,13 +1366,11 @@ def exportar_balance():
         print("Directorio de trabajo actual:", os.getcwd())
 
         flash("Excel generado con éxito...")
-        return redirect(url_for('home'))
+        return send_file(ruta_archivo, as_attachment=True)
     except Exception as e:
         # En caso de error, puedes imprimir o manejar el error de alguna manera
         print(f"Error: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)})
-
-            
+        
             
 @app.route('/logout')
 @login_required

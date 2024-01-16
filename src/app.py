@@ -393,7 +393,18 @@ def mostrar_registro():
         session['año'] = año 
         mycursor = db.connection.cursor()
         query = """
-            SELECT 
+           SELECT 
+                idregistro,
+                fecha,
+                numeroasiento,
+                descripcion,
+                debe,
+                haber,
+                idetalle,
+                idplancuenta
+            FROM (
+                -- Detalles
+                SELECT 
                     ar.idregistro AS idregistro,
                     ar.fecha AS fecha,
                     ar.numeroasiento AS numeroasiento,
@@ -401,7 +412,8 @@ def mostrar_registro():
                     ad.debe AS debe,
                     ad.haber AS haber,
                     ad.idetalle AS idetalle,
-                    pc.idplancuenta AS idplancuenta
+                    pc.idplancuenta AS idplancuenta,
+                    1 AS Orden
                 FROM 
                     asientodetalle ad
                 JOIN 
@@ -410,11 +422,40 @@ def mostrar_registro():
                     plancuentas pc ON ad.plancuentasfk = pc.idplancuenta
                 WHERE 
                     ar.clientefk = %s
-                    AND YEAR(ar.fecha) = %s;
+                    AND YEAR(ar.fecha) = %s
 
-                    
+                UNION ALL
+
+                -- Totales
+                SELECT 
+                    '' AS idregistro,
+                    '' AS fecha,
+                    '' AS numeroasiento,
+                    'Totales' AS descripcion,
+                    SUM(debe) AS debe,
+                    SUM(haber) AS haber,
+                    '' AS idetalle,
+                    '' AS idplancuenta,
+                    2 AS Orden
+                FROM (
+                    SELECT 
+                        ad.debe,
+                        ad.haber
+                    FROM 
+                        asientodetalle ad
+                    JOIN 
+                        asientoregistro ar ON ad.asientoregistrofk = ar.idregistro
+                    JOIN 
+                        plancuentas pc ON ad.plancuentasfk = pc.idplancuenta
+                    WHERE 
+                        ar.clientefk = %s
+                        AND YEAR(ar.fecha) = %s
+                ) AS Totales
+            ) AS Resultados
+            ORDER BY Orden, idregistro;
+
                 """
-        mycursor.execute(query, (idcliente, año,))
+        mycursor.execute(query, (idcliente, año,idcliente, año,))
         registros = mycursor.fetchall()
         
         print("Consulta de totales", registros)
@@ -434,6 +475,7 @@ def mostrar_registro():
         print("resultado de la vista",registros)
         mycursor.close()
 
+        
         mycursor = db.connection.cursor()
         sql_month = "SELECT DISTINCT fecha FROM asientoregistro WHERE clientefk = %s"
         mycursor.execute(sql_month, (idcliente,))
@@ -762,14 +804,45 @@ def diario_excel():
 
     mycursor = db.connection.cursor()
     query = """
-       SELECT 
+     SELECT 
+        fecha,
+        numeroasiento,
+        descripcion,
+        debe,
+        haber
+    FROM (
+        -- Detalles
+        SELECT 
+            ar.fecha AS fecha,
+            ar.numeroasiento AS numeroasiento,
+            pc.descripcion AS descripcion,
+            ad.debe AS debe,
+            ad.haber AS haber,
+            1 AS Orden
+        FROM 
+            asientodetalle ad
+        JOIN 
+            asientoregistro ar ON ad.asientoregistrofk = ar.idregistro
+        JOIN 
+            plancuentas pc ON ad.plancuentasfk = pc.idplancuenta
+        WHERE 
+            ar.clientefk = %s
+            AND YEAR(ar.fecha) = %s
 
-                ar.fecha AS fecha,
-                ar.numeroasiento AS numeroasiento,
-                pc.descripcion AS descripcion,
-                ad.debe AS debe,
-                ad.haber AS haber
-                
+        UNION ALL
+
+        -- Totales
+        SELECT 
+            '' AS fecha,
+            '' AS numeroasiento,
+            'Totales' AS descripcion,
+            SUM(debe) AS debe,
+            SUM(haber) AS haber,
+            2 AS Orden
+        FROM (
+            SELECT 
+                ad.debe,
+                ad.haber
             FROM 
                 asientodetalle ad
             JOIN 
@@ -777,13 +850,16 @@ def diario_excel():
             JOIN 
                 plancuentas pc ON ad.plancuentasfk = pc.idplancuenta
             WHERE 
-                ar.clientefk = %s
-                AND YEAR(ar.fecha) = %s;
-                
+                ar.clientefk =%s
+                AND YEAR(ar.fecha) =%s
+        ) AS Totales
+    ) AS Resultados
+    ORDER BY Orden, fecha, numeroasiento;
+
 
     """
 
-    mycursor.execute(query, (idcliente, año))
+    mycursor.execute(query, (idcliente, año,idcliente, año))
     registros = mycursor.fetchall()
     print("registeos:",registros)
     carpeta_destino = 'C:/Users/Naty/OneDrive/Documentos'
@@ -1032,65 +1108,92 @@ def balance_año():
         try:
             mycursor = db.connection.cursor()
             sql = """
-               WITH CuentasConSaldos AS (
-                SELECT 
-                    pc.idplancuenta AS id_cuenta, 
-                    pc.codigo AS codigo_cuenta,
-                    pc.descripcion AS descripcion_cuenta,
-                    COALESCE(SUM(ad.debe - ad.haber), 0) AS saldo_cuenta
+               SELECT 
+                pc.codigo AS codigo_cuenta,
+                pc.descripcion AS descripcion_cuenta,
+                COALESCE(SUM(ad.debe - ad.haber), 0) AS saldo_cuenta
+                FROM plancuentas pc  
+                LEFT JOIN asientodetalle ad ON pc.idplancuenta = ad.plancuentasfk
+                LEFT JOIN asientoregistro ar ON ad.asientoregistrofk = ar.idregistro
+                LEFT JOIN clientes c ON ar.clientefk = c.idcliente
+                WHERE c.idcliente = %s
+                        OR c.idcliente IS NULL -- Incluye las cuentas sin transacciones
+                GROUP BY pc.codigo, pc.descripcion
+
+                UNION ALL
+
+                SELECT
+                '1' AS codigo_cuenta,
+                'ACTIVO' AS descripcion_cuenta,
+                COALESCE(SUM(ad.debe - ad.haber), 0) AS saldo_total
                 FROM plancuentas pc
                 LEFT JOIN asientodetalle ad ON pc.idplancuenta = ad.plancuentasfk
-                LEFT JOIN asientoregistro a ON ad.asientoregistrofk = a.idregistro
-                LEFT JOIN clientes c ON a.clientefk = c.idcliente
-                WHERE c.idcliente = %s
-                GROUP BY pc.idplancuenta, pc.codigo, pc.descripcion  
-            )
+                WHERE LEFT(pc.codigo, 1) = '1' OR ad.plancuentasfk IS NULL -- Incluye las cuentas sin transacciones
+                GROUP BY codigo_cuenta, descripcion_cuenta
 
-            -- Cuentas con código '1'
-            SELECT
-                '1' AS codigo_padre,
-                'ACTIVO' AS descripcion_padre,
-                COALESCE(SUM(ccs.saldo_cuenta), 0) AS saldo_total
-            FROM plancuentas pc
-            LEFT JOIN CuentasConSaldos ccs ON pc.idplancuenta = ccs.id_cuenta
-            WHERE LEFT(pc.codigo, 2) = '1.'
+                UNION ALL
 
-            UNION ALL
+                SELECT
+                '2' AS codigo_cuenta,
+                'PASIVO' AS descripcion_cuenta,
+                COALESCE(SUM(ad.debe - ad.haber), 0) AS saldo_total
+                FROM plancuentas pc  
+                LEFT JOIN asientodetalle ad ON pc.idplancuenta = ad.plancuentasfk
+                WHERE LEFT(pc.codigo, 1) = '2' OR ad.plancuentasfk IS NULL -- Incluye las cuentas sin transacciones
+                GROUP BY codigo_cuenta, descripcion_cuenta
 
-            SELECT
-                pc_padre.codigo AS codigo_padre,
-                pc_padre.descripcion AS descripcion_padre,
-                COALESCE(SUM(ccs.saldo_cuenta), 0) AS saldo_total
-            FROM plancuentas pc_padre
-            LEFT JOIN CuentasConSaldos ccs ON pc_padre.idplancuenta = ccs.id_cuenta
-            WHERE LEFT(pc_padre.codigo, 2) = '1.'
-            GROUP BY pc_padre.codigo, pc_padre.descripcion
+                UNION ALL
 
-            UNION ALL
+                SELECT
+                '3' AS codigo_cuenta,
+                'PATRIMONIO NETO' AS descripcion_cuenta,
+                COALESCE(
+                    SUM(CASE WHEN LEFT(pc.codigo, 1) = '1' THEN ad.debe - ad.haber ELSE 0 END) -
+                    SUM(CASE WHEN LEFT(pc.codigo, 1) = '2' THEN ad.debe - ad.haber ELSE 0 END), 0
+                ) AS saldo_total
+                FROM plancuentas pc
+                LEFT JOIN asientodetalle ad ON pc.idplancuenta = ad.plancuentasfk
+                WHERE LEFT(pc.codigo, 1) IN ('1', '2') OR ad.plancuentasfk IS NULL -- Incluye las cuentas sin transacciones
+                GROUP BY codigo_cuenta, descripcion_cuenta
 
-            -- Cuentas con código '2'
-            SELECT
-                '2' AS codigo_padre,
-                'PASIVO' AS descripcion_padre,
-                COALESCE(SUM(ccs.saldo_cuenta), 0) AS saldo_total
-            FROM plancuentas pc
-            LEFT JOIN CuentasConSaldos ccs ON pc.idplancuenta = ccs.id_cuenta
-            WHERE LEFT(pc.codigo, 2) = '2.'
+                UNION ALL
 
-            UNION ALL
+                SELECT
+                '4' AS codigo_cuenta,
+                'INGRESOS OPERATIVOS' AS descripcion_cuenta,
+                COALESCE(SUM(ad.debe - ad.haber), 0) AS saldo_total
+                FROM plancuentas pc
+                LEFT JOIN asientodetalle ad ON pc.idplancuenta = ad.plancuentasfk
+                WHERE LEFT(pc.codigo, 1) = '4' OR ad.plancuentasfk IS NULL -- Incluye las cuentas sin transacciones
+                GROUP BY codigo_cuenta, descripcion_cuenta
 
-            SELECT
-                pc_padre.codigo AS codigo_padre,
-                pc_padre.descripcion AS descripcion_padre,
-                COALESCE(SUM(ccs.saldo_cuenta), 0) AS saldo_total
-            FROM plancuentas pc_padre
-            LEFT JOIN CuentasConSaldos ccs ON pc_padre.idplancuenta = ccs.id_cuenta
-            WHERE LEFT(pc_padre.codigo, 2) = '2.'
-            GROUP BY pc_padre.codigo, pc_padre.descripcion
-            ORDER BY codigo_padre;
+                UNION ALL
 
-                    
-                    """
+                SELECT
+                '5' AS codigo_cuenta,
+                'COSTOS OPERATIVOS' AS descripcion_cuenta,
+                COALESCE(SUM(ad.debe - ad.haber), 0) AS saldo_total
+                FROM plancuentas pc
+                LEFT JOIN asientodetalle ad ON pc.idplancuenta = ad.plancuentasfk
+                WHERE LEFT(pc.codigo, 1) = '5' OR ad.plancuentasfk IS NULL -- Incluye las cuentas sin transacciones
+                GROUP BY codigo_cuenta, descripcion_cuenta
+
+
+                UNION ALL
+
+                SELECT
+                '6' AS codigo_cuenta,
+                ' GANANCIAS (O PÉRDIDAS) BRUTAS EN VENTAS' AS descripcion_cuenta,
+                COALESCE(
+                    SUM(CASE WHEN LEFT(pc.codigo, 1) = '4' THEN ad.debe - ad.haber ELSE 0 END) -
+                    SUM(CASE WHEN LEFT(pc.codigo, 1) = '5' THEN ad.debe - ad.haber ELSE 0 END), 0
+                ) AS saldo_total
+                FROM plancuentas pc
+                LEFT JOIN asientodetalle ad ON pc.idplancuenta = ad.plancuentasfk
+                WHERE LEFT(pc.codigo, 1) IN ('4', '5') OR ad.plancuentasfk IS NULL -- Incluye las cuentas sin transacciones
+                GROUP BY codigo_cuenta, descripcion_cuenta
+
+                ORDER BY codigo_cuenta;     """
             
             mycursor.execute(sql, (idcliente))
             resultados = mycursor.fetchall()
@@ -1249,79 +1352,104 @@ def exportar_balance():
 
         mycursor = db.connection.cursor()
         sql = """
-           SELECT
-            Codigo,
-            Descripcion,
-            SumasDebe,
-            SumasHaber,
-            SaldosDebe,
-            SaldosHaber
-            FROM (
-            SELECT 
-                p.codigo AS Codigo,
-                p.descripcion AS Descripcion,
-                COALESCE(SUM(d.debe), 0) AS SumasDebe,
-                COALESCE(SUM(d.haber), 0) AS SumasHaber,  
-                CASE WHEN COALESCE(SUM(d.debe - d.haber), 0) < 0 THEN 0 ELSE COALESCE(SUM(d.debe - d.haber), 0) END AS SaldosDebe,
-                CASE WHEN COALESCE(SUM(d.haber - d.debe), 0) < 0 THEN 0 ELSE COALESCE(SUM(d.haber - d.debe), 0) END AS SaldosHaber,
-                1 AS Orden
-            FROM
-                plancuentas p
-            LEFT JOIN 
-                asientodetalle d ON p.idplancuenta = d.plancuentasfk
-            LEFT JOIN
-                asientoregistro a ON d.asientoregistrofk = a.idregistro AND
-                                    a.clientefk = %s AND 
-                                    YEAR(a.fecha) = %s
-            GROUP BY 
-                p.codigo,
-                p.descripcion
-                            
-            UNION
+           SELECT 
+            pc.codigo AS codigo_cuenta,
+            pc.descripcion AS descripcion_cuenta,
+            COALESCE(SUM(ad.debe - ad.haber), 0) AS saldo_cuenta
+            FROM plancuentas pc  
+            LEFT JOIN asientodetalle ad ON pc.idplancuenta = ad.plancuentasfk
+            LEFT JOIN asientoregistro ar ON ad.asientoregistrofk = ar.idregistro
+            LEFT JOIN clientes c ON ar.clientefk = c.idcliente
+            WHERE c.idcliente = %s
+                    OR c.idcliente IS NULL -- Incluye las cuentas sin transacciones
+            GROUP BY pc.codigo, pc.descripcion
+
+            UNION ALL
 
             SELECT
-                '' AS Codigo,
-                'Totales' AS Descripcion,
-                SUM(COALESCE(SumasDebe, 0)) AS SumasDebe,
-                SUM(COALESCE(SumasHaber, 0)) AS SumasHaber,
-                SUM(COALESCE(SaldosDebe, 0)) AS SaldosDebe, 
-                SUM(COALESCE(SaldosHaber, 0)) AS SaldosHaber,
-                
-                2 AS Orden
-            FROM (
-                SELECT
-                p.codigo AS Codigo,
-                p.descripcion AS Descripcion,
-                COALESCE(SUM(d.debe), 0) AS SumasDebe,
-                COALESCE(SUM(d.haber), 0) AS SumasHaber,
-                CASE WHEN COALESCE(SUM(d.debe - d.haber), 0) < 0 THEN 0 ELSE COALESCE(SUM(d.debe - d.haber), 0) END AS SaldosDebe,
-                CASE WHEN COALESCE(SUM(d.haber - d.debe), 0) < 0 THEN 0 ELSE COALESCE(SUM(d.haber - d.debe), 0) END AS SaldosHaber
-              
-                FROM
-                plancuentas p
-                LEFT JOIN
-                asientodetalle d ON p.idplancuenta = d.plancuentasfk
-                LEFT JOIN
-                asientoregistro a ON d.asientoregistrofk = a.idregistro
-                WHERE a.clientefk = %s AND YEAR(a.fecha) = %s
-                GROUP BY
-                p.codigo, p.descripcion
-            ) AS DetallesTotales
-            ) AS DetallesFinal
+            '1' AS codigo_cuenta,
+            'ACTIVO' AS descripcion_cuenta,
+            COALESCE(SUM(ad.debe - ad.haber), 0) AS saldo_total
+            FROM plancuentas pc
+            LEFT JOIN asientodetalle ad ON pc.idplancuenta = ad.plancuentasfk
+            WHERE LEFT(pc.codigo, 1) = '1' OR ad.plancuentasfk IS NULL -- Incluye las cuentas sin transacciones
+            GROUP BY codigo_cuenta, descripcion_cuenta
 
-            ORDER BY Orden, Codigo;
-            """
-        mycursor.execute(sql, (idcliente, año, idcliente, año))
+            UNION ALL
+
+            SELECT
+            '2' AS codigo_cuenta,
+            'PASIVO' AS descripcion_cuenta,
+            COALESCE(SUM(ad.debe - ad.haber), 0) AS saldo_total
+            FROM plancuentas pc  
+            LEFT JOIN asientodetalle ad ON pc.idplancuenta = ad.plancuentasfk
+            WHERE LEFT(pc.codigo, 1) = '2' OR ad.plancuentasfk IS NULL -- Incluye las cuentas sin transacciones
+            GROUP BY codigo_cuenta, descripcion_cuenta
+
+            UNION ALL
+
+            SELECT
+            '3' AS codigo_cuenta,
+            'PATRIMONIO NETO' AS descripcion_cuenta,
+            COALESCE(
+                SUM(CASE WHEN LEFT(pc.codigo, 1) = '1' THEN ad.debe - ad.haber ELSE 0 END) -
+                SUM(CASE WHEN LEFT(pc.codigo, 1) = '2' THEN ad.debe - ad.haber ELSE 0 END), 0
+            ) AS saldo_total
+            FROM plancuentas pc
+            LEFT JOIN asientodetalle ad ON pc.idplancuenta = ad.plancuentasfk
+            WHERE LEFT(pc.codigo, 1) IN ('1', '2') OR ad.plancuentasfk IS NULL -- Incluye las cuentas sin transacciones
+            GROUP BY codigo_cuenta, descripcion_cuenta
+
+            UNION ALL
+
+            SELECT
+            '4' AS codigo_cuenta,
+            'INGRESOS OPERATIVOS' AS descripcion_cuenta,
+            COALESCE(SUM(ad.debe - ad.haber), 0) AS saldo_total
+            FROM plancuentas pc
+            LEFT JOIN asientodetalle ad ON pc.idplancuenta = ad.plancuentasfk
+            WHERE LEFT(pc.codigo, 1) = '4' OR ad.plancuentasfk IS NULL -- Incluye las cuentas sin transacciones
+            GROUP BY codigo_cuenta, descripcion_cuenta
+
+            UNION ALL
+
+            SELECT
+            '5' AS codigo_cuenta,
+            'COSTOS OPERATIVOS' AS descripcion_cuenta,
+            COALESCE(SUM(ad.debe - ad.haber), 0) AS saldo_total
+            FROM plancuentas pc
+            LEFT JOIN asientodetalle ad ON pc.idplancuenta = ad.plancuentasfk
+            WHERE LEFT(pc.codigo, 1) = '5' OR ad.plancuentasfk IS NULL -- Incluye las cuentas sin transacciones
+            GROUP BY codigo_cuenta, descripcion_cuenta
+
+
+            UNION ALL
+
+            SELECT
+            '6' AS codigo_cuenta,
+            ' GANANCIAS (O PÉRDIDAS) BRUTAS EN VENTAS' AS descripcion_cuenta,
+            COALESCE(
+                SUM(CASE WHEN LEFT(pc.codigo, 1) = '4' THEN ad.debe - ad.haber ELSE 0 END) -
+                SUM(CASE WHEN LEFT(pc.codigo, 1) = '5' THEN ad.debe - ad.haber ELSE 0 END), 0
+            ) AS saldo_total
+            FROM plancuentas pc
+            LEFT JOIN asientodetalle ad ON pc.idplancuenta = ad.plancuentasfk
+            WHERE LEFT(pc.codigo, 1) IN ('4', '5') OR ad.plancuentasfk IS NULL -- Incluye las cuentas sin transacciones
+            GROUP BY codigo_cuenta, descripcion_cuenta
+
+            ORDER BY codigo_cuenta;            
+                """
+        mycursor.execute(sql, (idcliente,))
         # Ejecutar y obtener resultados
         resultados = mycursor.fetchall() 
         print(resultados)
         #df = pd.DataFrame(resultados)
         
         
-        df = pd.DataFrame(resultados, columns=['Codigo', 'Descripcion', 'SumasDebe', 'SumasHaber', 'SaldosDebe', 'SaldosHaber'])
+        df = pd.DataFrame(resultados, columns=['Codigo', 'Descripcion', 'Monto'])
 
         # Reorganizar las columnas según la estructura típica de un balance
-        df = df[['Codigo', 'Descripcion', 'SumasDebe', 'SumasHaber', 'SaldosDebe', 'SaldosHaber']]
+        df = df[['Codigo', 'Descripcion', 'Monto']]
 
        
         # Crear un libro de Excel y una hoja de cálculo
@@ -1332,9 +1460,7 @@ def exportar_balance():
         ws['A1'] = f"Reporte Cliente: {nombre_cliente}, Año: {año}"
         ws['A1'].font = openpyxl.styles.Font(bold=True)
         # Títulos en dos filas
-        ws.append(["Código", "Descripción"])  
-        ws.append([None, None, "Sumas", "Sumas", "Saldos", None])
-        ws.append([None, None, "Debe", "Haber", "Debe", "Haber"])
+        
 
                 # Unir celdas desde fila 1
         ws.merge_cells(start_row=1, start_column=3, end_row=1, end_column=4)

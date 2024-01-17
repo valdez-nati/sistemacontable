@@ -1,4 +1,3 @@
-
 from flask import Flask, render_template, request, redirect, url_for, flash,jsonify,session,make_response, send_file,request
 from flask_mysqldb import MySQL
 from werkzeug.security import check_password_hash
@@ -101,6 +100,28 @@ def home():
     idrol = session.get('idrol')
     id=idrol
     return render_template('home.html', data=data, id=id )
+
+def filter_clients(query):
+    mycursor = db.connection.cursor()
+    # You can customize this query based on your requirements
+    query = f"SELECT * FROM clientes WHERE nombres LIKE '%{query}%' OR apellidos LIKE '%{query}%' OR razonsocial LIKE '%{query}%' OR correo LIKE '%{query}%' OR ruc LIKE '%{query}%'"
+    mycursor.execute(query)
+    
+    
+    filtered_data =  mycursor.fetchall()
+    
+    return filtered_data
+
+@app.route('/buscarclientes', methods=['GET'])
+def buscarclientes():
+    query = request.args.get('query')
+    filtered_data = filter_clients(query)
+
+    idrol = session.get('idrol')
+    id=idrol
+   
+    return render_template('home.html', data=filtered_data,id=id)
+
 
 @app.after_request
 def add_header(response):
@@ -544,29 +565,73 @@ def mes_registro():
         y= fecha.year
         print("m:",m,"y:",y)
         query = """
-            SELECT 
-                ar.idregistro AS idregistro,
-                ar.fecha AS fecha,
-                ar.numeroasiento AS numeroasiento,
-                pc.descripcion AS descripcion,
-                ad.debe AS debe,
-                ad.haber AS haber,
-                ad.idetalle AS idetalle,
-                pc.idplancuenta AS idplancuenta
-            FROM 
-                asientodetalle ad
-            JOIN 
-                asientoregistro ar ON ad.asientoregistrofk = ar.idregistro
-            JOIN 
-                plancuentas pc ON ad.plancuentasfk = pc.idplancuenta
-            WHERE 
-                ar.clientefk = %s
-                AND MONTH(ar.fecha)=%s
-                AND YEAR(ar.fecha) = %s;
-            """
+           SELECT 
+                idregistro,
+                fecha,
+                numeroasiento,
+                descripcion,
+                debe,
+                haber,
+                idetalle,
+                idplancuenta
+            FROM (
+                -- Detalles
+                SELECT 
+                    ar.idregistro AS idregistro,
+                    ar.fecha AS fecha,
+                    ar.numeroasiento AS numeroasiento,
+                    pc.descripcion AS descripcion,
+                    ad.debe AS debe,
+                    ad.haber AS haber,
+                    ad.idetalle AS idetalle,
+                    pc.idplancuenta AS idplancuenta,
+                    1 AS Orden
+                FROM 
+                    asientodetalle ad
+                JOIN 
+                    asientoregistro ar ON ad.asientoregistrofk = ar.idregistro
+                JOIN 
+                    plancuentas pc ON ad.plancuentasfk = pc.idplancuenta
+                WHERE 
+                    ar.clientefk = %s
+                    AND MONTH(ar.fecha)=%s
+                    AND YEAR(ar.fecha) = %s
 
+                UNION ALL
+
+                -- Totales
+                SELECT 
+                    '' AS idregistro,
+                    '' AS fecha,
+                    '' AS numeroasiento,
+                    'Totales' AS descripcion,
+                    SUM(debe) AS debe,
+                    SUM(haber) AS haber,
+                    '' AS idetalle,
+                    '' AS idplancuenta,
+                    2 AS Orden
+                FROM (
+                    SELECT 
+                        ad.debe,
+                        ad.haber
+                    FROM 
+                        asientodetalle ad
+                    JOIN 
+                        asientoregistro ar ON ad.asientoregistrofk = ar.idregistro
+                    JOIN 
+                        plancuentas pc ON ad.plancuentasfk = pc.idplancuenta
+                    WHERE 
+                       ar.clientefk = %s
+                        AND MONTH(ar.fecha)=%s
+                        AND YEAR(ar.fecha) = %s
+                ) AS Totales
+            ) AS Resultados
+            ORDER BY Orden, idregistro;
+
+                """
+     
         
-        mycursor.execute(query, (idcliente,m, y,))
+        mycursor.execute(query, (idcliente,m, y,idcliente,m, y,))
         registros = mycursor.fetchall()
         if session.get('registros') is None:
             session['registros'] = []
@@ -729,12 +794,21 @@ def exportar_excel():
 
     mycursor = db.connection.cursor()
     query = """
+     SELECT 
+        fecha,
+        numeroasiento,
+        descripcion,
+        debe,
+        haber
+    FROM (
+        -- Detalles
         SELECT 
-            ar.fecha AS Fecha,
-            ar.numeroasiento AS Asiento,
-            pc.descripcion AS Descripcion,
-            ad.debe AS Debe,
-            ad.haber AS Haber
+            ar.fecha AS fecha,
+            ar.numeroasiento AS numeroasiento,
+            pc.descripcion AS descripcion,
+            ad.debe AS debe,
+            ad.haber AS haber,
+            1 AS Orden
         FROM 
             asientodetalle ad
         JOIN 
@@ -744,40 +818,91 @@ def exportar_excel():
         WHERE 
             ar.clientefk = %s
             AND YEAR(ar.fecha) = %s
-            AND MONTH(ar.fecha) = %s;
-    """
+            AND MONTH(ar.fecha) = %s
 
-    mycursor.execute(query, (idcliente, y, m))
+        UNION ALL
+
+        -- Totales
+        SELECT 
+            '' AS fecha,
+            '' AS numeroasiento,
+            'Totales' AS descripcion,
+            SUM(debe) AS debe,
+            SUM(haber) AS haber,
+            2 AS Orden
+        FROM (
+            SELECT 
+                ad.debe,
+                ad.haber
+            FROM 
+                asientodetalle ad
+            JOIN 
+                asientoregistro ar ON ad.asientoregistrofk = ar.idregistro
+            JOIN 
+                plancuentas pc ON ad.plancuentasfk = pc.idplancuenta
+            WHERE 
+                 ar.clientefk = %s
+            AND YEAR(ar.fecha) = %s
+            AND MONTH(ar.fecha) = %s
+        ) AS Totales
+    ) AS Resultados
+    ORDER BY Orden, fecha, numeroasiento;
+
+
+    """
+   
+
+    mycursor.execute(query, (idcliente, y, m,idcliente, y, m))
     registros = mycursor.fetchall()
     print("registeos:",registros)
     carpeta_destino = 'C:/Users/Naty/OneDrive/Documentos'
     df = pd.DataFrame(registros, columns=['Fecha', 'Asiento', 'Descripcion', 'Debe', 'Haber'])
 
-    # Crear archivo Excel en memoria 
-    output = BytesIO()
+   # Crear un libro de Excel y una hoja de cálculo
+    df = df[['Fecha', 'Asiento', 'Descripcion', 'Debe', 'Haber']]
+     # Crear un libro de Excel y una hoja de cálculo
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "DIARIO"
 
-    writer = pd.ExcelWriter(output, engine='xlsxwriter')
-    df.to_excel(writer, index=False)
+    # Combinar celdas para el título
+    ws.merge_cells('A1:E1')
+    ws['A1'] = "DIARIO"
+    ws['A1'].font = openpyxl.styles.Font(size=16, bold=True)
+    ws['A1'].alignment = Alignment(horizontal="center")
 
-    # Cerrar archivo
-    writer.close()
-    
-    # Reiniciar puntero de memoria
-    output.seek(0)
+    # Agregar información del cliente y año
+    ws.append([f"Cliente: {nombre_cliente}, Año: {año}"])
+    ws.merge_cells('A2:E2')
+    ws['A2'].font = openpyxl.styles.Font(bold=True)
+    ws['A2'].alignment = Alignment(horizontal="center")
 
-    # Obtener los datos
-    data = output.read()
+    ws.append([f"Fecha de Expedición: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"])
+    ws.merge_cells('A3:E3')
+    ws['A3'].font = openpyxl.styles.Font(bold=True)
+    ws['A3'].alignment = Alignment(horizontal="center")
 
-    # Definir ruta y nombre archivo
-    nombre_archivo = f'reporte_cliente_{nombre_cliente}_mes_{mes}.xlsx'
+    # Agregar encabezados
+    headers = ['Fecha', 'Asiento', 'Descripcion', 'Debe', 'Haber']
+    ws.append(headers)
+    for row in ws.iter_rows(min_row=4, max_row=4, min_col=1, max_col=7):
+        for cell in row:
+            cell.font = openpyxl.styles.Font(bold=True)
+            cell.alignment = Alignment(horizontal="center")
+
+    # Escribir DataFrame
+    for row in df.itertuples(index=False):
+        ws.append(list(row))
+
+    # Guardar el archivo Excel
+    carpeta_destino = 'C:/Users/Naty/OneDrive/Documentos'
+    fecha_hora_actual = datetime.now().strftime("%Y%m%d%H%M%S")
+    nombre_archivo = f' diario_{nombre_cliente}_{año}_{fecha_hora_actual}.xlsx'
     ruta_archivo = os.path.join(carpeta_destino, nombre_archivo)
+    wb.save(ruta_archivo)
 
-    # Guardar archivo
-    with open(ruta_archivo, 'wb') as f:
-        f.write(data)
-
-    # Enviar archivo
     return send_file(ruta_archivo, as_attachment=True)
+
             
 
 
@@ -865,31 +990,52 @@ def diario_excel():
     carpeta_destino = 'C:/Users/Naty/OneDrive/Documentos'
     df = pd.DataFrame(registros, columns=['Fecha', 'Asiento', 'Descripcion', 'Debe', 'Haber'])
 
-    # Crear archivo Excel en memoria 
-    output = BytesIO()
 
-    writer = pd.ExcelWriter(output, engine='xlsxwriter')
-    df.to_excel(writer, index=False)
+    # Crear un libro de Excel y una hoja de cálculo
+    df = df[['Fecha', 'Asiento', 'Descripcion', 'Debe', 'Haber']]
+     # Crear un libro de Excel y una hoja de cálculo
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "DIARIO"
 
-    # Cerrar archivo
-    writer.close()
-    
-    # Reiniciar puntero de memoria
-    output.seek(0)
+    # Combinar celdas para el título
+    ws.merge_cells('A1:E1')
+    ws['A1'] = "DIARIO"
+    ws['A1'].font = openpyxl.styles.Font(size=16, bold=True)
+    ws['A1'].alignment = Alignment(horizontal="center")
 
-    # Obtener los datos
-    data = output.read()
+    # Agregar información del cliente y año
+    ws.append([f"Cliente: {nombre_cliente}, Año: {año}"])
+    ws.merge_cells('A2:E2')
+    ws['A2'].font = openpyxl.styles.Font(bold=True)
+    ws['A2'].alignment = Alignment(horizontal="center")
 
-    # Definir ruta y nombre archivo
-    nombre_archivo = f'diario_cliente_{nombre_cliente}_anio_{año}.xlsx'
+    ws.append([f"Fecha de Expedición: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"])
+    ws.merge_cells('A3:E3')
+    ws['A3'].font = openpyxl.styles.Font(bold=True)
+    ws['A3'].alignment = Alignment(horizontal="center")
+
+    # Agregar encabezados
+    headers = ['Fecha', 'Asiento', 'Descripcion', 'Debe', 'Haber']
+    ws.append(headers)
+    for row in ws.iter_rows(min_row=4, max_row=4, min_col=1, max_col=7):
+        for cell in row:
+            cell.font = openpyxl.styles.Font(bold=True)
+            cell.alignment = Alignment(horizontal="center")
+
+    # Escribir DataFrame
+    for row in df.itertuples(index=False):
+        ws.append(list(row))
+
+    # Guardar el archivo Excel
+    carpeta_destino = 'C:/Users/Naty/OneDrive/Documentos'
+    fecha_hora_actual = datetime.now().strftime("%Y%m%d%H%M%S")
+    nombre_archivo = f' diario_{nombre_cliente}_{año}_{fecha_hora_actual}.xlsx'
     ruta_archivo = os.path.join(carpeta_destino, nombre_archivo)
+    wb.save(ruta_archivo)
 
-    # Guardar archivo
-    with open(ruta_archivo, 'wb') as f:
-        f.write(data)
-
-    # Enviar archivo
     return send_file(ruta_archivo, as_attachment=True)
+
             
 
 #MAYOR
@@ -1008,6 +1154,7 @@ def mayor_excel():
         # Manejar el caso en el que no se encuentre el cliente
         nombre_cliente = "Cliente Desconocido"
 
+    fecha_hora_actual = datetime.now().strftime("%Y%m%d%H%M%S")
     mycursor = db.connection.cursor()
     query = """
       SELECT ar.fecha AS Fecha, 
@@ -1025,45 +1172,50 @@ def mayor_excel():
     mycursor.execute(query, (idcliente,cuentas, año))
     registros = mycursor.fetchall()
     print("registeos:",registros)
-    carpeta_destino = 'C:/Users/Naty/OneDrive/Documentos'
     df = pd.DataFrame(registros, columns=['Fecha', 'Cuentas',  'Asiento', 'Descripcion', 'Debe', 'Haber', 'Saldo'])
+    # Crear un libro de Excel y una hoja de cálculo
+    df = df[['Fecha', 'Cuentas',  'Asiento', 'Descripcion', 'Debe', 'Haber', 'Saldo']]
+     # Crear un libro de Excel y una hoja de cálculo
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "MAYOR"
 
-    
-    
-    additional_info = {
-        'Cliente': [nombre_cliente],
-        'Año': [año],
-        'Fecha de Expedición': [datetime.now().strftime('%Y-%m-%d %H:%M:%S')]
-    }
-    df_info = pd.DataFrame(additional_info)
+    # Combinar celdas para el título
+    ws.merge_cells('A1:G1')
+    ws['A1'] = "MAYOR"
+    ws['A1'].font = openpyxl.styles.Font(size=16, bold=True)
+    ws['A1'].alignment = Alignment(horizontal="center")
 
-    # Concatenate the additional information DataFrame with the main DataFrame
-    df = pd.concat([df_info, df], axis=1)
+    # Agregar información del cliente y año
+    ws.append([f"Cliente: {nombre_cliente}, Año: {año}"])
+    ws.merge_cells('A2:G2')
+    ws['A2'].font = openpyxl.styles.Font(bold=True)
+    ws['A2'].alignment = Alignment(horizontal="center")
 
-    # Crear archivo Excel en memoria 
-    output = BytesIO()
+    ws.append([f"Fecha de Expedición: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"])
+    ws.merge_cells('A3:G3')
+    ws['A3'].font = openpyxl.styles.Font(bold=True)
+    ws['A3'].alignment = Alignment(horizontal="center")
 
-    writer = pd.ExcelWriter(output, engine='xlsxwriter')
-    df.to_excel(writer, index=False)
+    # Agregar encabezados
+    headers = ['Fecha', 'Cuentas', 'Asiento', 'Descripcion', 'Debe', 'Haber', 'Saldo']
+    ws.append(headers)
+    for row in ws.iter_rows(min_row=4, max_row=4, min_col=1, max_col=7):
+        for cell in row:
+            cell.font = openpyxl.styles.Font(bold=True)
+            cell.alignment = Alignment(horizontal="center")
 
-    # Cerrar archivo
-    writer.close()
-    
-    # Reiniciar puntero de memoria
-    output.seek(0)
+    # Escribir DataFrame
+    for row in df.itertuples(index=False):
+        ws.append(list(row))
 
-    # Obtener los datos
-    data = output.read()
-
-    # Definir ruta y nombre archivo
-    nombre_archivo = f'mayor_cliente_{nombre_cliente}_anio_{año}.xlsx'
+    # Guardar el archivo Excel
+    carpeta_destino = 'C:/Users/Naty/OneDrive/Documentos'
+    fecha_hora_actual = datetime.now().strftime("%Y%m%d%H%M%S")
+    nombre_archivo = f'mayor_{nombre_cliente}_{año}_{fecha_hora_actual}.xlsx'
     ruta_archivo = os.path.join(carpeta_destino, nombre_archivo)
+    wb.save(ruta_archivo)
 
-    # Guardar archivo
-    with open(ruta_archivo, 'wb') as f:
-        f.write(data)
-
-    # Enviar archivo
     return send_file(ruta_archivo, as_attachment=True)
 
 
@@ -1427,8 +1579,13 @@ def exportar_balance():
         ws['A2'] = f"Cliente: {nombre_cliente}, Año: {año}"
         ws.merge_cells('A2:C2')  # Combina las celdas A1, B1, y C1
         ws['A2'].font = openpyxl.styles.Font(bold=True)
-
+        ws['A2'].alignment = Alignment(horizontal="center")
         
+        ws.append([f"Fecha de Expedición: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"])
+        ws.merge_cells('A3:C3')
+        ws['A3'].font = openpyxl.styles.Font(bold=True)
+        ws['A3'].alignment = Alignment(horizontal="center")
+
         
                 # Unir celdas desde fila 1
         ws.merge_cells(start_row=1, start_column=3, end_row=1, end_column=4)
@@ -1440,7 +1597,9 @@ def exportar_balance():
         ws.column_dimensions['A'].auto_size = True
         # Estilo de celda para centrar texto
         align_center = Alignment(horizontal="center")
-
+         # Agregar encabezados
+        headers = ['Codigo', 'Descripcion', 'Monto']
+        ws.append(headers)
         # Aplicar estilos a las celdas
         for row in ws.iter_rows(min_row=1, max_row=2, min_col=1, max_col=6):
             for cell in row:
@@ -1453,7 +1612,7 @@ def exportar_balance():
 
         # Guardar el archivo Excel
         carpeta_destino = 'C:/Users/Naty/OneDrive/Documentos'
-        nombre_archivo = f'reporte_cliente_{nombre_cliente}_anio_{año}_{fecha_hora_actual}.xlsx'
+        nombre_archivo = f'balance_{nombre_cliente}_{año}_{fecha_hora_actual}.xlsx'
         ruta_archivo = os.path.join(carpeta_destino, nombre_archivo)
         wb.save(ruta_archivo)
 

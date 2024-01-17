@@ -19,6 +19,22 @@
   
 </header>
 
+
+
+
+  <!-- Search form -->
+  <div class="col-sm-6 offset-sm-2">
+      <form action="{{ url_for('buscarclientes') }}" method="GET" class="form-inline mt-3">
+          <div class="form-group">
+              <label for="searchInput" class="sr-only">Buscar Clientes</label>
+              <input type="text" class="form-control" id="searchInput" name="query" placeholder="Buscar Clientes">
+          </div>
+          <button type="submit" class="btn btn-primary ml-2">Buscar</button>
+      </form>
+  </div>
+
+
+
 <div class="container-fluid">
   
           <div class="row">
@@ -95,6 +111,7 @@
         </div>
 
     </div>
+
 
 <table class="table table-hover">
     <thead>

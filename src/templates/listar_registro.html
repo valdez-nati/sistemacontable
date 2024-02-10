@@ -26,6 +26,7 @@
 
 <h1  style="text-align: center">Lista de registros</h1>
 <input type="hidden" name="csrf_token" value="{{csrf_token()}}">
+<a href="/home" class="btn btn-primary " >Pagina Principal</a>
 
 <div class="row">
   <div class="col-md-6 mx-auto" style="text-align: center; margin-bottom: 20px;">
@@ -101,7 +102,7 @@
      
       <td>
         {% if id == 1 %}
-          <a href="#" class="btn btn-secondary btn-sm" data-toggle="modal" data-target="#modaledit{{registro.6}}">Editar</a>
+          <a href="/editar_registro" class="btn btn-secondary btn-sm" data-toggle="modal" data-target="#modaledit{{registro.6}}">Editar</a>
         {% endif %}
       </td>
       <td>
@@ -116,33 +117,31 @@
  
               <div class="modal-header">
                   <h5 class="modal-title text-primary" style="align-content: center;">Editar</h5>    
-                  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                  </button>
+              
                 </div>
                 
 
               <div class="modal-body">
                   
                   <form action="{{ url_for('editar_registro')}}" method="POST">
-                      
-                      <input type="hidden" name="idregistrofk" value="{{registro.0}}">
-                      
+                                                                
                       <input type="hidden" name="csrf_token" value="{{csrf_token()}}"> <!--para que no tire error con el token-->
-
                       <div class="form-group">
                         <label>Fecha</label>
                         <input type="date" name="fecha" id="fecha" class="form-control" value="{{ registro.1 }}">
 
                         
                       </div>
-                      <input type="hidden" name="idregistro" value="{{registro.2}}">
+                      <input type="hidden" name="idregistro" value="{{registro.0}}">
+                      <input type="hidden" name="numeroasiento" value="{{registro.2}}">
 
                       <div class="form-group">
                         <label  >Cuentas:</label>
                         <select id="cuentas" name="descripcion" class="form-control" value="{{ registro.3 }}">
                           {% for cuenta in data %}
-                            <option value="{{ cuenta[0] }}">{{ cuenta[1] }}</option>
+                            <option value="{{ cuenta[0] }}" {% if cuenta[2] == registro.7 %}selected{% endif %}>
+                              {{ cuenta[1] }} - {{ cuenta[2] }}
+                            </option>
                           {% endfor %}
                         </select>
                       </div>
@@ -157,6 +156,7 @@
                         
                       </div>
                       <input type="hidden" name="idetalle" value="{{registro.6}}">
+                    
 
 
                       

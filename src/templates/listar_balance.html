@@ -5,7 +5,6 @@
 
 {% block title %}VENTA{% endblock  %}
 
-
 {% block body %}
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
@@ -23,14 +22,13 @@
   </button>
 </header>
 
-
-<h1  style="text-align: center">Balance</h1>
+<h1 style="text-align: center">Balance</h1>
 <input type="hidden" name="csrf_token" value="{{csrf_token()}}">
-
+<a href="/home" class="btn btn-primary float-left "  >Pagina Principal</a>
 <div style="text-align: center;">
-  <form method="post" action="/balance_año">
+  <form method="post" action="/balance_año" id="balanceForm">
     <input type="hidden" name="csrf_token" id="csrf_token" value="{{csrf_token()}}">
-  
+    <input type="hidden" name="page" id="pageNum" value="1">
 
     <h5>Seleccione un año:</h5>
     <select name="year" class="form-select">
@@ -38,6 +36,9 @@
             <option value="{{ year }}" {% if year == request.args.get('lis') %}selected{% endif %}>{{ year }}</option>
         {% endfor %}
     </select>
+    {% if year %}
+      <input type="hidden" name="year" value="{{ year }}">
+    {% endif %}
     <button type="submit">Mostrar </button>
   </form>
   <form method="post" action="/procesar_balance">
@@ -46,9 +47,6 @@
     <button type="submit" class="btn btn-success">Exportar a Excel</button>
   </form>
 </div>
-
-    
-
 
 {% with messages = get_flashed_messages() %}
     {% if messages %}
@@ -67,21 +65,42 @@
       <th>Descripción</th>
       <th>Monto</th>
     </tr>
-
   </thead>
-  
   <tbody>
+    {% for registro in dat %}
+      
+      <tr>
+        <td>{{ registro.0 }}</td>
+        <td>{{ registro.1 }}</td>
+        <td>{{ registro.2 }}</td> 
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
 
-  {% for registro in resultados %}
-  
-    <tr>
-      <td>{{ registro.0 }}</td>
-      <td>{{ registro.1 }}</td>
-      <td>{{ registro.2 }}</td> 
-    
+{% if total_pages %}
+  <div style="text-align: center;">
+    <ul class="pagination">
+      {% for page_num in range(1, total_pages + 1) %}
+        <li class="page-item {% if page_num == page %}active{% endif %}">
+          <a class="page-link" href="{{ url_for('balance_año', page=page_num, year=year) }}">{{ page_num }}</a>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+<script>
+  $(document).ready(function() {
+      $('.pagination a').on('click', function(e) {
+          e.preventDefault();
+          var page = $(this).text(); // Obtener el número de página seleccionado
+          $('#pageNum').val(page); // Actualizar el valor del campo oculto
+          $('#balanceForm').submit(); // Enviar el formulario
+      });
+  });
+</script>
 
-    </tr>
-  {%endfor%}
-</tbody>
 
-{% endblock  %}
+
+
+{% endblock %}

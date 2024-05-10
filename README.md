@@ -1,0 +1,11 @@
+# Descripción 
+![image](https://github.com/valdez-nati/sistemacontable/assets/113633115/d1c17882-7abe-4e14-a8ec-5434105a8c7b)
+!Captura de pantalla de la interfaz de usuario del Estudio Contable YANA. La tabla 'CLIENTES' muestra columnas para nombres, apellidos, razón social, correo electrónico y RUC, con botones para 'Editar', 'Cargar' y 'Eliminar' cada entrada. El botón 'Cargar' abre una interfaz para ingresar datos al libro diario, permitiendo a los usuarios registrar transacciones contables de manera eficiente.
+![image](https://github.com/valdez-nati/sistemacontable/assets/113633115/9bfbce77-7092-4384-9fcf-d431253d2302)
+!Interfaz del 'Registro Diario' del Estudio Contable YANA, donde se pueden ingresar y guardar transacciones contables. Incluye campos para la fecha, número de asiento, descripción, selección de cuenta y montos en 'Debe' o 'Haber'. Los botones 'Diario', 'Mayor' y 'Balance' ofrecen accesos directos a otras funciones contables importantes.
+![image](https://github.com/valdez-nati/sistemacontable/assets/113633115/d88062ba-65cf-4b89-a3e8-4fcfd744c21e)
+!Interfaz que muestra la sección 'Lista de registros', donde los usuarios pueden seleccionar un año y un mes para visualizar registros contables. Incluye opciones para exportar los datos a Excel y una tabla que detalla las transacciones con fecha, número de asiento, descripción y montos en 'Debe' y 'Haber'.
+![image](https://github.com/valdez-nati/sistemacontable/assets/113633115/8a9bddd3-920f-4fa2-9b2f-0f7e62b88bed)
+!Interfaz de un sistema contable en línea que permite a los usuarios seleccionar una cuenta y año específicos para visualizar y gestionar registros financieros. La página incluye botones para mostrar los datos y exportarlos a Excel, así como una tabla para visualizar las transacciones con detalles como fecha, número de asiento, descripción, y montos en 'Debe' y 'Haber'.
+![image](https://github.com/valdez-nati/sistemacontable/assets/113633115/909961cc-cb21-45e2-9a9d-24e8c075d3ea)
+!Interfaz de sistema contable en línea que permite a los usuarios seleccionar un año específico para consultar balances financieros. Incluye opciones para exportar los datos a Excel y presenta una tabla con columnas para código, descripción y monto, facilitando la gestión y análisis de la información financiera.
